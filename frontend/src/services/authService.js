@@ -4,12 +4,12 @@ export const authService = {
   // 登入
   async login(userIdentifier, password = null) {
     const loginData = {
-      userIdentifier, // 可以是 email, username 或學號
+      UserIdentifier: userIdentifier, // 注意：後端期望大寫開頭
     };
     
     // 只有在提供密碼時才添加密碼欄位
     if (password) {
-      loginData.password = password;
+      loginData.Password = password; // 注意：後端期望大寫開頭
     }
     
     const response = await apiClient.post('/auth/login', loginData);
