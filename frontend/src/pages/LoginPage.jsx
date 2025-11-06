@@ -113,8 +113,9 @@ const LoginPage = () => {
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-sm text-gray-600 mb-2">測試帳號:</p>
                 <div className="text-xs text-gray-500 space-y-1">
-                  <p>管理員: admin@busmanagement.com / Admin@123</p>
-                  <p>系統管理員: sysadmin@busmanagement.com / SysAdmin@123</p>
+                  <p>管理員: admin / 123</p>
+                  <p>系統管理員: sysadmin / 123</p>
+                  <p>只讀管理員: readonly / 123</p>
                   <p>領隊: 需要先在系統中指派學員為領隊才能登入</p>
                 </div>
               </div>
