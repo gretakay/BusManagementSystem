@@ -1,0 +1,6 @@
+@BusManagementSystem_HostAddress = http://localhost:5095
+
+GET {{BusManagementSystem_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
