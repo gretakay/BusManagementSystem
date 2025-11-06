@@ -49,35 +49,35 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-lg">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-3 py-4 sm:px-4 sm:py-6">
+      <div className="w-full max-w-md sm:max-w-lg mx-auto">
         {/* 主登入卡片 */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
           {/* 頭部區域 */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-8 text-center">
-            <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mx-auto mb-4">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 sm:p-6 text-center">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <svg className="w-7 h-7 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">遊覽車管理系統</h1>
-            <p className="text-blue-100">智能化行程管理平台</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-white mb-1">遊覽車管理系統</h1>
+            <p className="text-sm text-blue-100">智能化行程管理平台</p>
           </div>
 
           {/* 表單區域 */}
-          <div className="p-8">
-            <div className="mb-6 text-center">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">歡迎回來</h2>
-              <p className="text-gray-600">請選擇登入方式並輸入您的資訊</p>
+          <div className="p-4 sm:p-6">
+            <div className="mb-4 text-center">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1">歡迎回來</h2>
+              <p className="text-sm text-gray-600">請選擇登入方式並輸入您的資訊</p>
             </div>
 
             {/* 登入模式切換 */}
-            <div className="mb-6">
-              <div className="flex bg-gray-100 rounded-2xl p-1">
+            <div className="mb-4">
+              <div className="flex bg-gray-100 rounded-xl p-1">
                 <button
                   type="button"
                   onClick={() => setIsLeaderMode(false)}
-                  className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                     !isLeaderMode 
                       ? 'bg-white text-blue-600 shadow-md' 
                       : 'text-gray-600 hover:text-gray-900'
@@ -88,7 +88,7 @@ const LoginPage = () => {
                 <button
                   type="button"
                   onClick={() => setIsLeaderMode(true)}
-                  className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isLeaderMode 
                       ? 'bg-white text-purple-600 shadow-md' 
                       : 'text-gray-600 hover:text-gray-900'
@@ -99,11 +99,11 @@ const LoginPage = () => {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3">
                   <div className="flex items-center">
-                    <svg className="w-5 h-5 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <p className="text-sm text-red-700 font-medium">{error}</p>
@@ -111,7 +111,7 @@ const LoginPage = () => {
                 </div>
               )}
               
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <Input
                   label={isLeaderMode ? "學號" : "帳號/Email"}
                   name="userIdentifier"
@@ -144,19 +144,19 @@ const LoginPage = () => {
                   isLeaderMode 
                     ? 'from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700' 
                     : 'from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700'
-                } text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200`}
+                } text-white font-bold py-3 sm:py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200`}
                 loading={loading}
                 disabled={loading}
               >
                 {loading ? (
                   <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     登入中...
                   </div>
                 ) : (
                   <>
                     {isLeaderMode ? '領隊登入' : '管理員登入'}
-                    <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                     </svg>
                   </>
@@ -167,24 +167,24 @@ const LoginPage = () => {
         </div>
 
         {/* 測試帳號資訊 */}
-        <div className="mt-6 bg-white/60 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-          <div className="text-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">測試帳號</h3>
-            <p className="text-sm text-gray-600">開發測試階段可用帳號</p>
+        <div className="mt-4 bg-white/60 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+          <div className="text-center mb-3">
+            <h3 className="text-base font-semibold text-gray-900 mb-1">測試帳號</h3>
+            <p className="text-xs text-gray-600">開發測試階段可用帳號</p>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-blue-50 rounded-2xl p-4">
-              <h4 className="font-semibold text-blue-900 mb-2">管理員帳號</h4>
-              <div className="text-sm text-blue-700 space-y-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="bg-blue-50 rounded-xl p-3">
+              <h4 className="font-semibold text-blue-900 mb-2 text-sm">管理員帳號</h4>
+              <div className="text-xs text-blue-700 space-y-1">
                 <p><span className="font-medium">系統管理員:</span> sysadmin / 123</p>
                 <p><span className="font-medium">一般管理員:</span> admin / 123</p>
                 <p><span className="font-medium">唯讀管理員:</span> readonly / 123</p>
               </div>
             </div>
-            <div className="bg-purple-50 rounded-2xl p-4">
-              <h4 className="font-semibold text-purple-900 mb-2">領隊登入</h4>
-              <div className="text-sm text-purple-700 space-y-1">
+            <div className="bg-purple-50 rounded-xl p-3">
+              <h4 className="font-semibold text-purple-900 mb-2 text-sm">領隊登入</h4>
+              <div className="text-xs text-purple-700 space-y-1">
                 <p>需要管理員先在系統中</p>
                 <p>指派學員為領隊角色</p>
                 <p>才能使用學號登入</p>
