@@ -77,7 +77,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "https://gretakay.github.io")
+        policy.WithOrigins(
+                "http://localhost:5173", 
+                "https://gretakay.github.io",
+                "https://gretakay.github.io/BusManagementSystem")
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
