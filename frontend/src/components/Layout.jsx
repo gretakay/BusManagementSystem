@@ -116,19 +116,19 @@ const Layout = ({ children }) => {
       </div>
 
       {/* 側邊欄 - 電腦版固定顯示，手機版可收合 */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-white/95 backdrop-blur-xl shadow-2xl transform transition-all duration-300 ease-out ${
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 lg:w-80 bg-white/95 backdrop-blur-xl shadow-2xl transform transition-all duration-300 ease-out ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } lg:translate-x-0 lg:static lg:inset-0`}>
         <div className="flex flex-col h-full">
           {/* Logo 區域 */}
-          <div className="flex items-center justify-between h-20 px-6 bg-gradient-to-r from-blue-600 to-purple-600">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-center justify-between h-16 lg:h-20 px-4 lg:px-6 bg-gradient-to-r from-blue-600 to-purple-600">
+            <div className="flex items-center space-x-2 lg:space-x-3">
+              <div className="w-8 h-8 lg:w-10 lg:h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <svg className="w-5 h-5 lg:w-6 lg:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h1 className="text-xl font-bold text-white">遊覽車管理</h1>
+              <h1 className="text-lg lg:text-xl font-bold text-white">遊覽車管理</h1>
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -141,25 +141,25 @@ const Layout = ({ children }) => {
           </div>
 
           {/* 用戶信息 */}
-          <div className="px-6 py-6 bg-gradient-to-b from-gray-50 to-white border-b border-gray-100">
-            <div className="flex items-center space-x-4">
+          <div className="px-4 lg:px-6 py-4 lg:py-6 bg-gradient-to-b from-gray-50 to-white border-b border-gray-100">
+            <div className="flex items-center space-x-3 lg:space-x-4">
               <div className="relative">
-                <div className="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <span className="text-lg font-bold text-white">
+                <div className="h-10 w-10 lg:h-12 lg:w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl lg:rounded-2xl flex items-center justify-center shadow-lg">
+                  <span className="text-base lg:text-lg font-bold text-white">
                     {user?.displayName?.charAt(0) || 'U'}
                   </span>
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full"></div>
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 lg:w-4 lg:h-4 bg-green-400 border-2 border-white rounded-full"></div>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-lg font-semibold text-gray-900 truncate">{user?.displayName}</p>
-                <p className="text-sm text-gray-500 truncate">{user?.roles?.join(' · ')}</p>
+                <p className="text-base lg:text-lg font-semibold text-gray-900 truncate">{user?.displayName}</p>
+                <p className="text-xs lg:text-sm text-gray-500 truncate">{user?.roles?.join(' · ')}</p>
               </div>
             </div>
           </div>
 
           {/* 導航選單 */}
-          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          <nav className="flex-1 px-3 lg:px-4 py-4 lg:py-6 space-y-1 lg:space-y-2 overflow-y-auto">
             {filteredNavigation.map((item) => (
               <button
                 key={item.name}
@@ -167,13 +167,13 @@ const Layout = ({ children }) => {
                   navigate(item.href);
                   if (isMobile) setSidebarOpen(false);
                 }}
-                className={`group flex items-center w-full px-4 py-3 text-sm font-medium rounded-2xl transition-all duration-200 ${
+                className={`group flex items-center w-full px-3 lg:px-4 py-2 lg:py-3 text-sm font-medium rounded-xl lg:rounded-2xl transition-all duration-200 ${
                   location.pathname === item.href
                     ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
                     : 'text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:text-blue-700 hover:scale-105'
                 }`}
               >
-                <span className={`mr-4 transition-transform duration-200 ${
+                <span className={`mr-3 lg:mr-4 transition-transform duration-200 ${
                   location.pathname === item.href ? 'scale-110' : 'group-hover:scale-110'
                 }`}>
                   {item.icon}
@@ -187,12 +187,12 @@ const Layout = ({ children }) => {
           </nav>
 
           {/* 登出按鈕 */}
-          <div className="p-4 border-t border-gray-100 bg-gradient-to-t from-gray-50">
+          <div className="p-3 lg:p-4 border-t border-gray-100 bg-gradient-to-t from-gray-50">
             <button
               onClick={handleLogout}
-              className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-700 rounded-2xl hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:text-red-700 transition-all duration-200 group"
+              className="flex items-center w-full px-3 lg:px-4 py-2 lg:py-3 text-sm font-medium text-gray-700 rounded-xl lg:rounded-2xl hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:text-red-700 transition-all duration-200 group"
             >
-              <svg className="mr-4 h-5 w-5 transition-transform duration-200 group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="mr-3 lg:mr-4 h-4 w-4 lg:h-5 lg:w-5 transition-transform duration-200 group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
               <span className="font-medium">登出</span>
@@ -210,7 +210,7 @@ const Layout = ({ children }) => {
       )}
 
       {/* 主要內容區域 - 電腦版有左邊距，手機版沒有 */}
-      <div className="lg:pl-72">
+      <div className="lg:pl-64 xl:pl-80">
         <main className="min-h-screen pb-20 lg:pb-0">
           {children}
         </main>

@@ -5,6 +5,16 @@ const MobileBottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const user = authService.getCurrentUser();
+
+  // 如果在登入頁面，不顯示底部導航
+  if (location.pathname === '/login') {
+    return null;
+  }
+
+  // 如果用戶未登入，不顯示底部導航
+  if (!user) {
+    return null;
+  }
   const isLeader = authService.hasRole('Leader');
   const isAdmin = authService.hasRole('AdminRead') || authService.hasRole('AdminWrite') || authService.hasRole('SysAdmin');
 
