@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../services/authService';
 import MobileBottomNav from './MobileBottomNav';
 
 const Layout = ({ children }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const user = authService.getCurrentUser();
@@ -18,7 +21,7 @@ const Layout = ({ children }) => {
 
   const handleLogout = () => {
     authService.logout();
-    window.location.href = '/login';
+    navigate('/login', { replace: true });
   };
 
   const navigation = [
@@ -80,8 +83,8 @@ const Layout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* 手機端頂部導航 */}
-      <div className="lg:hidden bg-white/80 backdrop-blur-lg shadow-sm border-b border-gray-200/50 sticky top-0 z-30">
+      {/* 手機端頂部導航 - 只在小螢幕顯示 */}
+      <div className="block lg:hidden bg-white/80 backdrop-blur-lg shadow-sm border-b border-gray-200/50 sticky top-0 z-30">
         <div className="px-4 py-3 flex items-center justify-between">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -112,8 +115,10 @@ const Layout = ({ children }) => {
         </div>
       </div>
 
-      {/* 側邊欄 */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-white/95 backdrop-blur-xl shadow-2xl transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-out lg:translate-x-0 lg:static lg:inset-0`}>
+      {/* 側邊欄 - 電腦版固定顯示，手機版可收合 */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-white/95 backdrop-blur-xl shadow-2xl transform transition-all duration-300 ease-out ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      } lg:translate-x-0 lg:static lg:inset-0`}>
         <div className="flex flex-col h-full">
           {/* Logo 區域 */}
           <div className="flex items-center justify-between h-20 px-6 bg-gradient-to-r from-blue-600 to-purple-600">
@@ -156,26 +161,28 @@ const Layout = ({ children }) => {
           {/* 導航選單 */}
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             {filteredNavigation.map((item) => (
-              <a
+              <button
                 key={item.name}
-                href={item.href}
-                className={`group flex items-center px-4 py-3 text-sm font-medium rounded-2xl transition-all duration-200 ${
-                  window.location.pathname === item.href
+                onClick={() => {
+                  navigate(item.href);
+                  if (isMobile) setSidebarOpen(false);
+                }}
+                className={`group flex items-center w-full px-4 py-3 text-sm font-medium rounded-2xl transition-all duration-200 ${
+                  location.pathname === item.href
                     ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
                     : 'text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:text-blue-700 hover:scale-105'
                 }`}
-                onClick={() => isMobile && setSidebarOpen(false)}
               >
                 <span className={`mr-4 transition-transform duration-200 ${
-                  window.location.pathname === item.href ? 'scale-110' : 'group-hover:scale-110'
+                  location.pathname === item.href ? 'scale-110' : 'group-hover:scale-110'
                 }`}>
                   {item.icon}
                 </span>
                 <span className="font-medium">{item.name}</span>
-                {window.location.pathname === item.href && (
+                {location.pathname === item.href && (
                   <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
                 )}
-              </a>
+              </button>
             ))}
           </nav>
 
@@ -194,7 +201,7 @@ const Layout = ({ children }) => {
         </div>
       </div>
 
-      {/* 手機端遮罩 */}
+      {/* 手機端遮罩 - 只在手機版顯示 */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden transition-opacity duration-300"
@@ -202,14 +209,14 @@ const Layout = ({ children }) => {
         />
       )}
 
-      {/* 主要內容區域 */}
+      {/* 主要內容區域 - 電腦版有左邊距，手機版沒有 */}
       <div className="lg:pl-72">
         <main className="min-h-screen pb-20 lg:pb-0">
           {children}
         </main>
       </div>
 
-      {/* 手機端底部導航 */}
+      {/* 手機端底部導航 - 只在手機版顯示 */}
       <MobileBottomNav />
     </div>
   );

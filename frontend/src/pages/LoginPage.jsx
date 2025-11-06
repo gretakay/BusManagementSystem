@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Card, CardContent, CardHeader } from '../components/ui/Card';
 
 const LoginPage = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     userIdentifier: '', // 改為更通用的名稱
     password: '',
@@ -30,7 +31,9 @@ const LoginPage = () => {
       }
 
       await authService.login(formData.userIdentifier, password);
-      window.location.href = '/'; // 登入成功後跳轉到首頁
+      
+      // 登入成功後使用 navigate 重定向
+      navigate('/', { replace: true });
     } catch (error) {
       setError(error.response?.data?.message || '登入失敗，請檢查帳號密碼');
     } finally {

@@ -56,16 +56,16 @@ const HomePage = () => {
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
           {/* 頁面標題 */}
-          <div className="mb-8">
-            <div className="bg-white/80 backdrop-blur-lg rounded-3xl p-6 lg:p-8 shadow-xl border border-white/20">
+          <div className="mb-6 lg:mb-8">
+            <div className="bg-white/80 backdrop-blur-lg rounded-2xl lg:rounded-3xl p-4 lg:p-8 shadow-xl border border-white/20">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                 <div className="mb-4 lg:mb-0">
-                  <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                  <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
                     歡迎回來，{user?.displayName}
                   </h1>
-                  <p className="text-gray-600 text-lg">
+                  <p className="text-gray-600 text-base lg:text-lg">
                     {new Date().toLocaleDateString('zh-TW', { 
                       year: 'numeric', 
                       month: 'long', 
@@ -74,16 +74,16 @@ const HomePage = () => {
                     })}
                   </p>
                 </div>
-                <div className="flex items-center space-x-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                   <div className="hidden lg:flex items-center space-x-2 text-sm text-gray-500">
                     <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                     <span>系統運行正常</span>
                   </div>
-                  <div className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 rounded-2xl">
-                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl lg:rounded-2xl">
+                    <svg className="w-4 h-4 lg:w-5 lg:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                    <span className="text-sm font-medium text-blue-700">{user?.roles?.join(' · ')}</span>
+                    <span className="text-xs lg:text-sm font-medium text-blue-700">{user?.roles?.join(' · ')}</span>
                   </div>
                 </div>
               </div>
@@ -91,19 +91,19 @@ const HomePage = () => {
           </div>
 
           {error && (
-            <div className="mb-8">
-              <div className="bg-red-50 border border-red-200 rounded-2xl p-4 lg:p-6">
+            <div className="mb-6 lg:mb-8">
+              <div className="bg-red-50 border border-red-200 rounded-xl lg:rounded-2xl p-4 lg:p-6">
                 <div className="flex items-center">
-                  <svg className="w-6 h-6 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 lg:w-6 lg:h-6 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p className="text-red-700 font-medium">{error}</p>
+                  <p className="text-red-700 font-medium text-sm lg:text-base">{error}</p>
                 </div>
               </div>
             </div>
           )}
 
-          <div className="space-y-8">
+          <div className="space-y-6 lg:space-y-8">
             {/* 領隊專用區域 */}
             {isLeader && (
               <div className="space-y-6">

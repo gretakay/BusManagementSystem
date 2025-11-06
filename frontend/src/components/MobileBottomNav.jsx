@@ -1,6 +1,9 @@
+import { useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../services/authService';
 
 const MobileBottomNav = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const user = authService.getCurrentUser();
   const isLeader = authService.hasRole('Leader');
   const isAdmin = authService.hasRole('AdminRead') || authService.hasRole('AdminWrite') || authService.hasRole('SysAdmin');
@@ -73,17 +76,17 @@ const MobileBottomNav = () => {
     item.roles.some(role => user?.roles?.includes(role))
   );
 
-  const currentPath = window.location.pathname;
+  const currentPath = location.pathname;
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-200/50 shadow-lg">
+    <div className="block lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-200/50 shadow-lg">
       <div className="grid grid-cols-4 h-16">
-        {filteredNavigation.map((item) => {
+        {filteredNavigation.slice(0, 4).map((item) => {
           const isActive = currentPath === item.href;
           return (
-            <a
+            <button
               key={item.name}
-              href={item.href}
+              onClick={() => navigate(item.href)}
               className={`flex flex-col items-center justify-center p-2 transition-all duration-200 ${
                 isActive 
                   ? 'bg-gray-50 transform scale-105' 
@@ -101,7 +104,7 @@ const MobileBottomNav = () => {
               {isActive && (
                 <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"></div>
               )}
-            </a>
+            </button>
           );
         })}
       </div>
