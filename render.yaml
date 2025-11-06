@@ -3,7 +3,7 @@ services:
     name: bus-management-api
     env: dotnet
     repo: https://github.com/gretakay/BusManagementSystem.git
-    buildCommand: dotnet publish BusManagementSystem/BusManagementSystem.csproj -c Release -o out
+    buildCommand: dotnet publish BusManagementSystem/BusManagementSystem.csproj -c Release -o out --self-contained false
     startCommand: dotnet out/BusManagementSystem.dll
     plan: free
     envVars:
