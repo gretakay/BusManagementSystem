@@ -55,208 +55,276 @@ const HomePage = () => {
 
   return (
     <Layout>
-      <div className="p-4 space-y-6">
-        {/* 頁面標題 */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            歡迎回來，{user?.displayName}
-          </h1>
-          <p className="text-gray-600">
-            {new Date().toLocaleDateString('zh-TW', { 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric',
-              weekday: 'long'
-            })}
-          </p>
-        </div>
-
-        {error && (
-          <div className="bg-danger-50 border border-danger-200 rounded-lg p-4">
-            <p className="text-danger-700">{error}</p>
-          </div>
-        )}
-
-        {/* 領隊專用區域 */}
-        {isLeader && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-gray-900">我的車輛</h2>
-            {myBuses.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <div className="text-gray-500 mb-4">
-                    <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+          {/* 頁面標題 */}
+          <div className="mb-8">
+            <div className="bg-white/80 backdrop-blur-lg rounded-3xl p-6 lg:p-8 shadow-xl border border-white/20">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div className="mb-4 lg:mb-0">
+                  <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                    歡迎回來，{user?.displayName}
+                  </h1>
+                  <p className="text-gray-600 text-lg">
+                    {new Date().toLocaleDateString('zh-TW', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric',
+                      weekday: 'long'
+                    })}
+                  </p>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <div className="hidden lg:flex items-center space-x-2 text-sm text-gray-500">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span>系統運行正常</span>
                   </div>
-                  <p className="text-gray-500">目前沒有分配到車輛</p>
-                  <p className="text-sm text-gray-400 mt-2">請聯絡管理員進行車輛分配</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {myBuses.map((bus) => (
-                  <Card key={bus.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-gray-900">{bus.name}</h3>
-                        <span className="text-sm text-gray-500">{bus.tripName}</span>
+                  <div className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 rounded-2xl">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span className="text-sm font-medium text-blue-700">{user?.roles?.join(' · ')}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {error && (
+            <div className="mb-8">
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-4 lg:p-6">
+                <div className="flex items-center">
+                  <svg className="w-6 h-6 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-red-700 font-medium">{error}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-8">
+            {/* 領隊專用區域 */}
+            {isLeader && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                    <svg className="w-7 h-7 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                    </svg>
+                    我的車輛
+                  </h2>
+                  {myBuses.length > 0 && (
+                    <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                      {myBuses.length} 輛車輛
+                    </div>
+                  )}
+                </div>
+                
+                {myBuses.length === 0 ? (
+                  <div className="bg-white/80 backdrop-blur-lg rounded-3xl p-8 lg:p-12 text-center shadow-xl border border-white/20">
+                    <div className="mb-6">
+                      <div className="w-24 h-24 bg-gradient-to-r from-blue-100 to-purple-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                        </svg>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">容量:</span>
-                          <span className="text-sm font-medium">{bus.capacity} 人</span>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">目前沒有分配到車輛</h3>
+                      <p className="text-gray-500">請聯絡管理員進行車輛分配</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {myBuses.map((bus) => (
+                      <div key={bus.id} className="group bg-white/80 backdrop-blur-lg rounded-3xl p-6 shadow-xl border border-white/20 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-bold text-gray-900">{bus.name}</h3>
+                          <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">{bus.tripName}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">分配:</span>
-                          <span className="text-sm font-medium">{bus.assignedCount} 人</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">已上車:</span>
-                          <span className={`text-sm font-medium ${bus.boardedCount > 0 ? 'text-success-600' : 'text-gray-500'}`}>
-                            {bus.boardedCount} 人
-                          </span>
-                        </div>
-                        <div className="mt-4">
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-primary-600 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${bus.assignedCount > 0 ? (bus.boardedCount / bus.assignedCount) * 100 : 0}%` }}
-                            ></div>
+                        
+                        <div className="space-y-3 mb-6">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">容量</span>
+                            <span className="text-sm font-bold text-gray-900">{bus.capacity} 人</span>
                           </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            上車率: {bus.assignedCount > 0 ? Math.round((bus.boardedCount / bus.assignedCount) * 100) : 0}%
-                          </p>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">已分配</span>
+                            <span className="text-sm font-bold text-blue-600">{bus.assignedCount} 人</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">已上車</span>
+                            <span className={`text-sm font-bold ${bus.boardedCount > 0 ? 'text-green-600' : 'text-gray-500'}`}>
+                              {bus.boardedCount} 人
+                            </span>
+                          </div>
+                          
+                          <div className="mt-4">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-xs text-gray-500">上車進度</span>
+                              <span className="text-xs font-medium text-gray-700">
+                                {bus.assignedCount > 0 ? Math.round((bus.boardedCount / bus.assignedCount) * 100) : 0}%
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                              <div 
+                                className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-500 ease-out"
+                                style={{ width: `${bus.assignedCount > 0 ? (bus.boardedCount / bus.assignedCount) * 100 : 0}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex space-x-3">
+                          <a 
+                            href={`/scan?busId=${bus.id}`}
+                            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-center py-3 px-4 rounded-2xl text-sm font-bold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+                          >
+                            開始掃碼
+                          </a>
+                          <a 
+                            href={`/buses/${bus.id}/roster`}
+                            className="flex-1 bg-gray-100 text-gray-700 text-center py-3 px-4 rounded-2xl text-sm font-bold hover:bg-gray-200 transform hover:scale-105 transition-all duration-200"
+                          >
+                            查看名單
+                          </a>
                         </div>
                       </div>
-                      <div className="mt-4 flex space-x-2">
-                        <a 
-                          href={`/scan?busId=${bus.id}`}
-                          className="flex-1 bg-primary-600 text-white text-center py-2 px-3 rounded-md text-sm font-medium hover:bg-primary-700 transition-colors"
-                        >
-                          開始掃碼
-                        </a>
-                        <a 
-                          href={`/buses/${bus.id}/roster`}
-                          className="flex-1 bg-gray-100 text-gray-700 text-center py-2 px-3 rounded-md text-sm font-medium hover:bg-gray-200 transition-colors"
-                        >
-                          查看名單
-                        </a>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        )}
 
-        {/* 管理員專用區域 */}
-        {isAdmin && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">最近行程</h2>
-              <a 
-                href="/trips" 
-                className="text-primary-600 hover:text-primary-700 text-sm font-medium"
-              >
-                查看全部
-              </a>
-            </div>
-            
-            {trips.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <div className="text-gray-500 mb-4">
-                    <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            {/* 管理員專用區域 */}
+            {isAdmin && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                    <svg className="w-7 h-7 text-purple-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-4 8v6m-4-3v3m8-3v3m4-6a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                  </div>
-                  <p className="text-gray-500 mb-4">目前沒有行程</p>
+                    最近行程
+                  </h2>
                   <a 
-                    href="/trips/new"
-                    className="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 transition-colors"
+                    href="/trips" 
+                    className="text-purple-600 hover:text-purple-700 text-sm font-medium bg-purple-50 px-4 py-2 rounded-2xl hover:bg-purple-100 transition-colors"
                   >
-                    建立第一個行程
+                    查看全部
                   </a>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {trips.slice(0, 4).map((trip) => (
-                  <Card key={trip.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-gray-900">{trip.name}</h3>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          trip.status === 'Open' ? 'bg-success-100 text-success-800' :
-                          trip.status === 'Draft' ? 'bg-gray-100 text-gray-800' :
-                          'bg-warning-100 text-warning-800'
-                        }`}>
-                          {trip.status === 'Open' ? '進行中' : 
-                           trip.status === 'Draft' ? '草稿' : '已結束'}
-                        </span>
+                </div>
+                
+                {trips.length === 0 ? (
+                  <div className="bg-white/80 backdrop-blur-lg rounded-3xl p-8 lg:p-12 text-center shadow-xl border border-white/20">
+                    <div className="mb-6">
+                      <div className="w-24 h-24 bg-gradient-to-r from-purple-100 to-pink-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-12 h-12 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-4 8v6m-4-3v3m8-3v3m4-6a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                       </div>
-                      <p className="text-sm text-gray-600">
-                        {new Date(trip.date).toLocaleDateString('zh-TW')}
-                      </p>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-gray-600">車輛數</p>
-                          <p className="font-medium">{trip.totalBuses}</p>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">目前沒有行程</h3>
+                      <p className="text-gray-500 mb-6">建立您的第一個行程來開始管理遊覽車</p>
+                      <a 
+                        href="/trips/new"
+                        className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white text-sm font-bold rounded-2xl hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+                      >
+                        建立第一個行程
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {trips.slice(0, 4).map((trip) => (
+                      <div key={trip.id} className="group bg-white/80 backdrop-blur-lg rounded-3xl p-6 shadow-xl border border-white/20 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-bold text-gray-900">{trip.name}</h3>
+                          <span className={`px-3 py-1 text-xs font-bold rounded-full ${
+                            trip.status === 'Open' ? 'bg-green-100 text-green-800' :
+                            trip.status === 'Draft' ? 'bg-gray-100 text-gray-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {trip.status === 'Open' ? '進行中' : 
+                             trip.status === 'Draft' ? '草稿' : '已結束'}
+                          </span>
                         </div>
-                        <div>
-                          <p className="text-gray-600">總容量</p>
-                          <p className="font-medium">{trip.totalCapacity}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">已分配</p>
-                          <p className="font-medium">{trip.totalAssigned}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">已上車</p>
-                          <p className="font-medium text-success-600">{trip.totalBoarded}</p>
+                        <p className="text-sm text-gray-600 mb-4">
+                          {new Date(trip.date).toLocaleDateString('zh-TW')}
+                        </p>
+                        
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="bg-blue-50 rounded-2xl p-3 text-center">
+                            <p className="text-blue-600 font-medium">車輛數</p>
+                            <p className="text-2xl font-bold text-blue-800">{trip.totalBuses}</p>
+                          </div>
+                          <div className="bg-purple-50 rounded-2xl p-3 text-center">
+                            <p className="text-purple-600 font-medium">總容量</p>
+                            <p className="text-2xl font-bold text-purple-800">{trip.totalCapacity}</p>
+                          </div>
+                          <div className="bg-orange-50 rounded-2xl p-3 text-center">
+                            <p className="text-orange-600 font-medium">已分配</p>
+                            <p className="text-2xl font-bold text-orange-800">{trip.totalAssigned}</p>
+                          </div>
+                          <div className="bg-green-50 rounded-2xl p-3 text-center">
+                            <p className="text-green-600 font-medium">已上車</p>
+                            <p className="text-2xl font-bold text-green-800">{trip.totalBoarded}</p>
+                          </div>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        )}
 
-        {/* 快速操作區域 */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">快速操作</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {isLeader && (
-              <a href="/scan" className="bg-white rounded-lg p-4 text-center hover:shadow-md transition-shadow border border-gray-200">
-                <div className="text-2xl mb-2">📱</div>
-                <p className="text-sm font-medium text-gray-900">掃碼</p>
-              </a>
-            )}
-            
-            {isAdmin && (
-              <>
-                <a href="/people/new" className="bg-white rounded-lg p-4 text-center hover:shadow-md transition-shadow border border-gray-200">
-                  <div className="text-2xl mb-2">👤</div>
-                  <p className="text-sm font-medium text-gray-900">新增人員</p>
-                </a>
-                <a href="/trips/new" className="bg-white rounded-lg p-4 text-center hover:shadow-md transition-shadow border border-gray-200">
-                  <div className="text-2xl mb-2">📅</div>
-                  <p className="text-sm font-medium text-gray-900">新增行程</p>
-                </a>
-                <a href="/reports" className="bg-white rounded-lg p-4 text-center hover:shadow-md transition-shadow border border-gray-200">
-                  <div className="text-2xl mb-2">📊</div>
-                  <p className="text-sm font-medium text-gray-900">查看報表</p>
-                </a>
-              </>
-            )}
+            {/* 快速操作區域 */}
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                <svg className="w-7 h-7 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                快速操作
+              </h2>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {isLeader && (
+                  <a href="/scan" className="group bg-white/80 backdrop-blur-lg rounded-3xl p-6 text-center hover:shadow-xl hover:scale-105 transition-all duration-300 border border-white/20">
+                    <div className="w-16 h-16 bg-gradient-to-r from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                      <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-bold text-gray-900">新增人員</p>
+                  </a>
+                )}
+                
+                {isAdmin && (
+                  <>
+                    <a href="/people/new" className="group bg-white/80 backdrop-blur-lg rounded-3xl p-6 text-center hover:shadow-xl hover:scale-105 transition-all duration-300 border border-white/20">
+                      <div className="w-16 h-16 bg-gradient-to-r from-green-100 to-green-200 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                        <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-bold text-gray-900">新增人員</p>
+                    </a>
+                    <a href="/trips/new" className="group bg-white/80 backdrop-blur-lg rounded-3xl p-6 text-center hover:shadow-xl hover:scale-105 transition-all duration-300 border border-white/20">
+                      <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-purple-200 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                        <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-4 8v6m-4-3v3m8-3v3m4-6a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-bold text-gray-900">新增行程</p>
+                    </a>
+                    <a href="/reports" className="group bg-white/80 backdrop-blur-lg rounded-3xl p-6 text-center hover:shadow-xl hover:scale-105 transition-all duration-300 border border-white/20">
+                      <div className="w-16 h-16 bg-gradient-to-r from-orange-100 to-orange-200 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                        <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-bold text-gray-900">查看報表</p>
+                    </a>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
