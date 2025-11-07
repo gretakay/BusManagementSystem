@@ -49,8 +49,8 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-3 py-4 sm:px-4 sm:py-6">
-      <div className="w-full max-w-md sm:max-w-lg mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-3 py-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md sm:max-w-lg lg:max-w-xl xl:max-w-2xl mx-auto">{/* 桌面版更寬的容器 */}
         {/* 主登入卡片 */}
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
           {/* 頭部區域 */}
@@ -65,14 +65,14 @@ const LoginPage = () => {
           </div>
 
           {/* 表單區域 */}
-          <div className="p-4 sm:p-6">
-            <div className="mb-4 text-center">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1">歡迎回來</h2>
-              <p className="text-sm text-gray-600">請選擇登入方式並輸入您的資訊</p>
+          <div className="p-4 sm:p-6 lg:p-8">{/* 桌面版更大的內邊距 */}
+            <div className="mb-4 lg:mb-6 text-center">{/* 桌面版更大的間距 */}
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 mb-1 lg:mb-2">歡迎回來</h2>
+              <p className="text-sm lg:text-base text-gray-600">請選擇登入方式並輸入您的資訊</p>
             </div>
 
             {/* 登入模式切換 */}
-            <div className="mb-4">
+            <div className="mb-4 lg:mb-6">{/* 桌面版更大的間距 */}
               <div className="flex bg-gray-100 rounded-xl p-1">
                 <button
                   type="button"

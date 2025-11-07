@@ -56,7 +56,7 @@ const HomePage = () => {
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="w-full px-1 sm:px-3 lg:px-8 py-2 sm:py-4 lg:py-6">{/* 手機版最小邊距，桌面版正常邊距 */}
+        <div className="w-full px-1 sm:px-4 lg:px-8 xl:px-12 py-2 sm:py-4 lg:py-6">{/* 手機版最小邊距，桌面版充足邊距 */}
           {/* 頁面標題 */}
           <div className="mb-2 sm:mb-4 lg:mb-6">{/* 響應式間距 */}
             <div className="bg-white/80 backdrop-blur-lg rounded-lg sm:rounded-xl lg:rounded-3xl p-2 sm:p-4 lg:p-6 shadow-xl border border-white/20">{/* 響應式圓角和內邊距 */}
