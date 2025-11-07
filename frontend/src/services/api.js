@@ -6,8 +6,8 @@ const isGitHubPages = window.location.hostname === 'gretakay.github.io';
 
 let API_BASE_URL;
 if (isGitHubPages || isProduction) {
-  // 生產環境或 GitHub Pages，使用 Render API
-  API_BASE_URL = 'https://busmanagementsystem-mbi4.onrender.com';
+  // 生產環境或 GitHub Pages，優先使用環境變數
+  API_BASE_URL = import.meta.env.VITE_API_URL || 'https://your-backend-server.com';
 } else {
   // 開發環境，使用環境變數或預設值
   API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5095';
