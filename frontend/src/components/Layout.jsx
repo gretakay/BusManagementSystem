@@ -61,6 +61,26 @@ const Layout = ({ children }) => {
       roles: ['AdminRead', 'AdminWrite', 'SysAdmin']
     },
     {
+      name: '車輛管理',
+      href: '/vehicles',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9L9 9M19 9A2 2 0 0121 11V15A2 2 0 0119 17M19 9L17 5H7L5 9M19 17H20A1 1 0 0021 18V19A1 1 0 0020 20H4A1 1 0 003 19V18A1 1 0 004 17H5M5 9A2 2 0 003 11V15A2 2 0 005 17M5 17L7 21H17L19 17" />
+        </svg>
+      ),
+      roles: ['AdminRead', 'AdminWrite', 'SysAdmin']
+    },
+    {
+      name: '領隊指派',
+      href: '/assignments',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+      roles: ['AdminWrite', 'SysAdmin']
+    },
+    {
       name: '人員管理',
       href: '/people',
       icon: (
