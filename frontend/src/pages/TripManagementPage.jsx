@@ -18,7 +18,6 @@ const TripManagementPage = () => {
     description: '',
     contactPerson: '',
     contactPhone: '',
-    budget: '',
     status: 'planning'
   });
 
@@ -43,7 +42,6 @@ const TripManagementPage = () => {
       description: '陽明山賞花一日遊，包含竹子湖海芋季',
       contactPerson: '王小明',
       contactPhone: '0912-345-678',
-      budget: '150000',
       status: 'confirmed',
       createdAt: '2025-11-01T10:00:00',
       vehiclesAssigned: 1,
@@ -61,7 +59,6 @@ const TripManagementPage = () => {
       description: '兩天一夜九份老街深度文化體驗',
       contactPerson: '李美華',
       contactPhone: '0923-456-789',
-      budget: '80000',
       status: 'planning',
       createdAt: '2025-11-05T14:30:00',
       vehiclesAssigned: 0,
@@ -79,7 +76,6 @@ const TripManagementPage = () => {
       description: '花蓮太魯閣國家公園三日深度遊',
       contactPerson: '陳大雄',
       contactPhone: '0934-567-890',
-      budget: '320000',
       status: 'in_progress',
       createdAt: '2025-10-28T09:15:00',
       vehiclesAssigned: 2,
@@ -118,7 +114,6 @@ const TripManagementPage = () => {
       description: '',
       contactPerson: '',
       contactPhone: '',
-      budget: '',
       status: 'planning'
     });
   };
@@ -126,14 +121,6 @@ const TripManagementPage = () => {
   const getStatusDisplay = (status) => {
     const statusConfig = statusOptions.find(s => s.value === status);
     return statusConfig || { label: status, color: 'bg-gray-100 text-gray-800', icon: '❓' };
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('zh-TW', {
-      style: 'currency',
-      currency: 'TWD',
-      minimumFractionDigits: 0
-    }).format(amount);
   };
 
   const getDaysCount = (startDate, endDate) => {
@@ -280,15 +267,6 @@ const TripManagementPage = () => {
                 />
               </div>
 
-              <Input
-                label="預算金額"
-                type="number"
-                min="0"
-                value={formData.budget}
-                onChange={(e) => setFormData(prev => ({ ...prev, budget: e.target.value }))}
-                placeholder="預估總預算（新台幣）"
-              />
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">行程描述</label>
                 <textarea
@@ -344,7 +322,7 @@ const TripManagementPage = () => {
                         </span>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600 mb-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-600 mb-3">
                         <div>
                           <span className="font-medium">日期：</span>
                           {new Date(trip.startDate).toLocaleDateString('zh-TW')}
@@ -357,10 +335,6 @@ const TripManagementPage = () => {
                         <div>
                           <span className="font-medium">人數：</span>
                           {trip.actualPassengers || 0} / {trip.estimatedPassengers} 人
-                        </div>
-                        <div>
-                          <span className="font-medium">預算：</span>
-                          {trip.budget ? formatCurrency(trip.budget) : '未設定'}
                         </div>
                       </div>
 
