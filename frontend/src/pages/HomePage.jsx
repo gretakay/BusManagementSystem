@@ -45,7 +45,7 @@ const HomePage = () => {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
         </div>
       </Layout>
     );
@@ -53,8 +53,9 @@ const HomePage = () => {
 
   return (
     <Layout>
-      {/* 頁面標題 */}
-      <div className="mb-6">
+      <div className="p-4">
+        {/* 頁面標題 */}
+        <div className="mb-6">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
             <div className="mb-4 lg:mb-0">
@@ -322,6 +323,7 @@ const HomePage = () => {
               </div>
             </div>
           </div>
+        </div>
     </Layout>
   );
 };
