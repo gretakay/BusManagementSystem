@@ -87,141 +87,223 @@ const Layout = ({ children }) => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col lg:flex-row">{/* 修正為 flex 佈局 */}
-      {/* 手機端頂部導航 - 只在小螢幕顯示 */}
-      <div className="block lg:hidden bg-white/80 backdrop-blur-lg shadow-sm border-b border-gray-200/50 sticky top-0 z-30">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-xl text-gray-600 hover:bg-gray-100/80 transition-colors"
-          >
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    <div className="min-h-screen bg-gray-100">
+      {/* 手機版：抽屜式側邊欄 */}
+      <div className="lg:hidden">
+        {/* 手機版頂部導航欄 */}
+        <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
+          <div className="px-4 py-3 flex items-center justify-between">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
-            </div>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              遊覽車管理
-            </h1>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="p-2 rounded-xl text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
-          >
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      {/* 側邊欄 - 電腦版固定顯示，手機版可收合 */}
-      <div className={`fixed lg:relative inset-y-0 left-0 z-50 w-64 xl:w-80 bg-white/95 backdrop-blur-xl shadow-2xl transform transition-all duration-300 ease-out ${
-        !isMobile ? 'translate-x-0' : (sidebarOpen ? 'translate-x-0' : '-translate-x-full')
-      } lg:translate-x-0 lg:flex-shrink-0`}>{/* 桌面版用相對定位，flex-shrink-0 防止壓縮 */}
-        <div className="flex flex-col h-full">
-          {/* Logo 區域 */}
-          <div className="flex items-center justify-between h-16 lg:h-20 px-4 lg:px-6 bg-gradient-to-r from-blue-600 to-purple-600">
-            <div className="flex items-center space-x-2 lg:space-x-3">
-              <div className="w-8 h-8 lg:w-10 lg:h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <svg className="w-5 h-5 lg:w-6 lg:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            </button>
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h1 className="text-lg lg:text-xl font-bold text-white">遊覽車管理</h1>
+              <h1 className="text-lg font-bold text-gray-900">遊覽車管理</h1>
             </div>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden p-2 rounded-xl text-white/80 hover:bg-white/20 transition-colors"
-            >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          {/* 用戶信息 */}
-          <div className="px-4 lg:px-6 py-4 lg:py-6 bg-gradient-to-b from-gray-50 to-white border-b border-gray-100">
-            <div className="flex items-center space-x-3 lg:space-x-4">
-              <div className="relative">
-                <div className="h-10 w-10 lg:h-12 lg:w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl lg:rounded-2xl flex items-center justify-center shadow-lg">
-                  <span className="text-base lg:text-lg font-bold text-white">
-                    {user?.displayName?.charAt(0) || 'U'}
-                  </span>
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-3 h-3 lg:w-4 lg:h-4 bg-green-400 border-2 border-white rounded-full"></div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-base lg:text-lg font-semibold text-gray-900 truncate">{user?.displayName}</p>
-                <p className="text-xs lg:text-sm text-gray-500 truncate">{user?.roles?.join(' · ')}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* 導航選單 */}
-          <nav className="flex-1 px-3 lg:px-4 py-4 lg:py-6 space-y-1 lg:space-y-2 overflow-y-auto">
-            {filteredNavigation.map((item) => (
-              <button
-                key={item.name}
-                onClick={() => {
-                  navigate(item.href);
-                  if (isMobile) setSidebarOpen(false);
-                }}
-                className={`group flex items-center w-full px-3 lg:px-4 py-2 lg:py-3 text-sm font-medium rounded-xl lg:rounded-2xl transition-all duration-200 ${
-                  location.pathname === item.href
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
-                    : 'text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:text-blue-700 hover:scale-105'
-                }`}
-              >
-                <span className={`mr-3 lg:mr-4 transition-transform duration-200 ${
-                  location.pathname === item.href ? 'scale-110' : 'group-hover:scale-110'
-                }`}>
-                  {item.icon}
-                </span>
-                <span className="font-medium">{item.name}</span>
-                {location.pathname === item.href && (
-                  <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                )}
-              </button>
-            ))}
-          </nav>
-
-          {/* 登出按鈕 */}
-          <div className="p-3 lg:p-4 border-t border-gray-100 bg-gradient-to-t from-gray-50">
             <button
               onClick={handleLogout}
-              className="flex items-center w-full px-3 lg:px-4 py-2 lg:py-3 text-sm font-medium text-gray-700 rounded-xl lg:rounded-2xl hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:text-red-700 transition-all duration-200 group"
+              className="p-2 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
             >
-              <svg className="mr-3 lg:mr-4 h-4 w-4 lg:h-5 lg:w-5 transition-transform duration-200 group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
-              <span className="font-medium">登出</span>
             </button>
+          </div>
+        </div>
+
+        {/* 手機版抽屜式側邊欄 */}
+        <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-white shadow-2xl transform transition-transform duration-300 ease-out ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}>
+          <div className="flex flex-col h-full">
+            {/* 側邊欄頭部 */}
+            <div className="flex items-center justify-between h-16 px-6 bg-gradient-to-r from-purple-500 to-indigo-600">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h1 className="text-xl font-bold text-white">遊覽車管理</h1>
+              </div>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="p-2 rounded-xl text-white/80 hover:bg-white/20 transition-colors"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* 用戶信息 */}
+            <div className="px-6 py-6 bg-gradient-to-b from-gray-50 to-white border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <div className="h-12 w-12 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <span className="text-lg font-bold text-white">
+                      {user?.displayName?.charAt(0) || 'U'}
+                    </span>
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full"></div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-lg font-semibold text-gray-900 truncate">{user?.displayName}</p>
+                  <p className="text-sm text-gray-500 truncate">{user?.roles?.join(' · ')}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 導航選單 */}
+            <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+              {filteredNavigation.map((item) => (
+                <button
+                  key={item.name}
+                  onClick={() => {
+                    navigate(item.href);
+                    setSidebarOpen(false);
+                  }}
+                  className={`group flex items-center w-full px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
+                    location.pathname === item.href
+                      ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg'
+                      : 'text-gray-700 hover:bg-purple-50 hover:text-purple-700'
+                  }`}
+                >
+                  <span className="mr-4">{item.icon}</span>
+                  <span className="font-medium">{item.name}</span>
+                  {location.pathname === item.href && (
+                    <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                  )}
+                </button>
+              ))}
+            </nav>
+
+            {/* 登出按鈕 */}
+            <div className="p-4 border-t border-gray-100">
+              <button
+                onClick={handleLogout}
+                className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-700 rounded-xl hover:bg-red-50 hover:text-red-700 transition-all duration-200 group"
+              >
+                <svg className="mr-4 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span className="font-medium">登出</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 手機版遮罩 */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* 手機版主內容 - 卡片式設計 */}
+        <div className="p-4">
+          <div className="w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+            <main className="pb-20">
+              {children}
+            </main>
           </div>
         </div>
       </div>
 
-      {/* 手機端遮罩 - 只在手機版顯示 */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden transition-opacity duration-300"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      {/* 桌面版：居中卡片佈局 */}
+      <div className="hidden lg:flex min-h-screen items-center justify-center p-6">
+        <div className="w-full max-w-7xl bg-white rounded-3xl shadow-2xl overflow-hidden">
+          <div className="flex h-[800px]">
+            {/* 桌面版側邊欄 */}
+            <div className="w-80 bg-gradient-to-b from-purple-50 to-indigo-50 border-r border-gray-200">
+              <div className="flex flex-col h-full">
+                {/* Logo 區域 */}
+                <div className="flex items-center h-20 px-6 bg-gradient-to-r from-purple-500 to-indigo-600">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h1 className="text-xl font-bold text-white">遊覽車管理</h1>
+                  </div>
+                </div>
 
-      {/* 主要內容區域 - 手機版全寬，桌面版 flex-1 充滿剩餘空間 */}
-      <div className="flex-1 w-full lg:pl-0">
-        <main className="min-h-screen pb-20 lg:pb-0 w-full">
-          {children}
-        </main>
+                {/* 用戶信息 */}
+                <div className="px-6 py-6 border-b border-purple-200">
+                  <div className="flex items-center space-x-4">
+                    <div className="relative">
+                      <div className="h-12 w-12 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <span className="text-lg font-bold text-white">
+                          {user?.displayName?.charAt(0) || 'U'}
+                        </span>
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full"></div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-lg font-semibold text-gray-900 truncate">{user?.displayName}</p>
+                      <p className="text-sm text-purple-600 truncate">{user?.roles?.join(' · ')}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 導航選單 */}
+                <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+                  {filteredNavigation.map((item) => (
+                    <button
+                      key={item.name}
+                      onClick={() => navigate(item.href)}
+                      className={`group flex items-center w-full px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
+                        location.pathname === item.href
+                          ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg'
+                          : 'text-gray-700 hover:bg-purple-100 hover:text-purple-700'
+                      }`}
+                    >
+                      <span className="mr-4">{item.icon}</span>
+                      <span className="font-medium">{item.name}</span>
+                      {location.pathname === item.href && (
+                        <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                      )}
+                    </button>
+                  ))}
+                </nav>
+
+                {/* 登出按鈕 */}
+                <div className="p-4 border-t border-purple-200">
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-700 rounded-xl hover:bg-red-50 hover:text-red-700 transition-all duration-200 group"
+                  >
+                    <svg className="mr-4 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span className="font-medium">登出</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 桌面版主內容區域 */}
+            <div className="flex-1 bg-gray-50 overflow-y-auto">
+              <main className="h-full">
+                {children}
+              </main>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* 手機端底部導航 - 只在手機版顯示 */}
+      {/* 手機端底部導航 */}
       <MobileBottomNav />
     </div>
   );

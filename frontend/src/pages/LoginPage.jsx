@@ -47,7 +47,7 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       {/* 中央大卡片 */}
-      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden">
+      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl overflow-hidden">
         {/* 網格佈局：手機單欄，桌面雙欄 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[600px]">
           
@@ -55,7 +55,7 @@ const LoginPage = () => {
           <div className="p-6 lg:p-10 flex flex-col justify-center">
             {/* 系統名稱 */}
             <div className="text-center mb-6 lg:mb-8">
-              <div className="w-12 h-12 lg:w-16 lg:h-16 mx-auto mb-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 lg:w-16 lg:h-16 mx-auto mb-3 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
                 <svg className="w-6 h-6 lg:w-8 lg:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -89,7 +89,7 @@ const LoginPage = () => {
                   onClick={() => setIsLeaderMode(false)}
                   className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
                     !isLeaderMode 
-                      ? 'bg-white text-blue-600 shadow-md' 
+                      ? 'bg-white text-purple-600 shadow-md' 
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -140,8 +140,8 @@ const LoginPage = () => {
                 size="lg"
                 className={`w-full bg-gradient-to-r ${
                   isLeaderMode 
-                    ? 'from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700' 
-                    : 'from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700'
+                    ? 'from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700' 
+                    : 'from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700'
                 } text-white font-bold py-3 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200`}
                 loading={loading}
                 disabled={loading}
@@ -163,9 +163,9 @@ const LoginPage = () => {
             </form>
 
             {/* 測試帳號小卡片 */}
-            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-              <h3 className="text-sm font-semibold text-blue-900 mb-2">測試帳號</h3>
-              <div className="text-xs text-blue-700 space-y-1">
+            <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+              <h3 className="text-sm font-semibold text-purple-900 mb-2">測試帳號</h3>
+              <div className="text-xs text-purple-700 space-y-1">
                 <p><span className="font-medium">系統管理員:</span> sysadmin / 123</p>
                 <p><span className="font-medium">一般管理員:</span> admin / 123</p>
                 <p><span className="font-medium">唯讀管理員:</span> readonly / 123</p>
@@ -174,7 +174,7 @@ const LoginPage = () => {
           </div>
 
           {/* 右側：介紹區 - 桌面版顯示 */}
-          <div className="hidden lg:flex bg-gradient-to-br from-indigo-500 to-purple-600 flex-col justify-center items-center text-center text-white p-10">
+          <div className="hidden lg:flex bg-gradient-to-br from-purple-500 to-indigo-600 flex-col justify-center items-center text-center text-white p-10">
             <div className="max-w-sm">
               <div className="w-20 h-20 mx-auto mb-6 bg-white/20 rounded-full flex items-center justify-center">
                 <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -183,7 +183,7 @@ const LoginPage = () => {
               </div>
               
               <h2 className="text-2xl font-bold mb-4">智能化管理</h2>
-              <p className="text-lg text-indigo-100 mb-8">提升旅遊體驗的專業平台</p>
+              <p className="text-lg text-purple-100 mb-8">提升旅遊體驗的專業平台</p>
               
               <div className="space-y-4 text-left">
                 <div className="flex items-center">
