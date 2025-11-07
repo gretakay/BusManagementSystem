@@ -21,6 +21,7 @@ const TripManagementPage = () => {
     contactPhone: '',
     status: 'planning',
     tripType: 'round_trip', // 'round_trip', 'one_way', 'multi_day'
+    boardingMode: 'assigned', // 'assigned' (指派上車), 'free' (自由上車)
     segments: [
       {
         id: 1,
@@ -38,6 +39,23 @@ const TripManagementPage = () => {
     { value: 'one_way', label: '單程', description: '只有去程，不返回' },
     { value: 'round_trip', label: '來回', description: '去程和回程在同一天' },
     { value: 'multi_day', label: '多日遊', description: '跨多天的行程，可能有多個段次' }
+  ];
+
+  const boardingModes = [
+    { 
+      value: 'assigned', 
+      label: '指派上車', 
+      description: '乘客需分配到指定車輛，掃碼時驗證是否為該車乘客',
+      icon: '🎯',
+      color: 'text-blue-600'
+    },
+    { 
+      value: 'free', 
+      label: '自由上車', 
+      description: '乘客可自由選擇車輛，掃碼後直接登記上車',
+      icon: '🆓',
+      color: 'text-green-600'
+    }
   ];
 
   const segmentTypes = [
@@ -72,6 +90,7 @@ const TripManagementPage = () => {
       vehiclesAssigned: 1,
       leadersAssigned: 1,
       tripType: 'round_trip',
+      boardingMode: 'assigned',
       segments: [
         {
           id: 1,
@@ -122,6 +141,7 @@ const TripManagementPage = () => {
       vehiclesAssigned: 0,
       leadersAssigned: 0,
       tripType: 'multi_day',
+      boardingMode: 'free',
       segments: [
         {
           id: 1,
@@ -166,6 +186,7 @@ const TripManagementPage = () => {
       vehiclesAssigned: 2,
       leadersAssigned: 2,
       tripType: 'multi_day',
+      boardingMode: 'assigned',
       segments: [
         {
           id: 1,
@@ -516,6 +537,45 @@ const TripManagementPage = () => {
                 </div>
               </div>
 
+              {/* 上車模式選擇 */}
+              <div className="border-t pt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-3">上車模式</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {boardingModes.map((mode) => (
+                    <div
+                      key={mode.value}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                        formData.boardingMode === mode.value
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => setFormData(prev => ({ ...prev, boardingMode: mode.value }))}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span className="text-2xl">{mode.icon}</span>
+                        <div className="flex-1">
+                          <div className={`font-medium ${mode.color}`}>
+                            {mode.label}
+                          </div>
+                          <div className="text-sm text-gray-600 mt-1">
+                            {mode.description}
+                          </div>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border-2 ${
+                          formData.boardingMode === mode.value
+                            ? 'border-blue-500 bg-blue-500'
+                            : 'border-gray-300'
+                        }`}>
+                          {formData.boardingMode === mode.value && (
+                            <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   label="預估人數"
@@ -831,6 +891,13 @@ const TripManagementPage = () => {
                         </span>
                         <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
                           {getTripTypeDisplay(trip.tripType)}
+                        </span>
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          trip.boardingMode === 'assigned' 
+                            ? 'bg-blue-100 text-blue-700' 
+                            : 'bg-green-100 text-green-700'
+                        }`}>
+                          {trip.boardingMode === 'assigned' ? '🎯 指派上車' : '🆓 自由上車'}
                         </span>
                         <span className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded-full">
                           {trip.segments?.length || 0} 段次
