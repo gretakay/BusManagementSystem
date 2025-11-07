@@ -293,8 +293,8 @@ const Layout = ({ children }) => {
           </div>
 
           {/* 桌面版主內容區域 */}
-          <div className="flex-1 h-full overflow-y-auto">
-            <main className="h-full">
+          <div className="flex-1 h-full overflow-y-auto bg-gray-50">
+            <main className="min-h-full px-6 py-6">
               {children}
             </main>
           </div>
