@@ -4,6 +4,9 @@ import { authService } from './services/authService';
 import { signalRService } from './services/signalRService';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
+import UserManagementPage from './pages/UserManagementPage';
+import DatabaseManagementPage from './pages/DatabaseManagementPage';
+import SystemSettingsPage from './pages/SystemSettingsPage';
 
 // 受保護的路由組件
 const ProtectedRoute = ({ children }) => {
@@ -117,6 +120,62 @@ function App() {
                 <div className="text-center">
                   <h1 className="text-2xl font-bold text-gray-900 mb-4">報表管理</h1>
                   <p className="text-gray-600">此功能正在開發中...</p>
+                </div>
+              </div>
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* 系統管理路由 */}
+        <Route 
+          path="/admin/users" 
+          element={
+            <ProtectedRoute>
+              <UserManagementPage />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin/database" 
+          element={
+            <ProtectedRoute>
+              <DatabaseManagementPage />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin/settings" 
+          element={
+            <ProtectedRoute>
+              <SystemSettingsPage />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/menu" 
+          element={
+            <ProtectedRoute>
+              <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 flex items-center justify-center">
+                <div className="text-center">
+                  <h1 className="text-2xl font-bold text-gray-900 mb-4">功能選單</h1>
+                  <p className="text-gray-600">更多管理功能和設定選項...</p>
+                </div>
+              </div>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin" 
+          element={
+            <ProtectedRoute>
+              <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50 flex items-center justify-center">
+                <div className="text-center">
+                  <h1 className="text-2xl font-bold text-gray-900 mb-4">系統管理</h1>
+                  <p className="text-gray-600">系統管理員專用功能...</p>
                 </div>
               </div>
             </ProtectedRoute>

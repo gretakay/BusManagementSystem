@@ -70,7 +70,7 @@ const MobileBottomNav = () => {
     );
   }
 
-  // 添加更多選項
+  // 添加更多選項（管理功能統一放在這裡）
   navigation.push({
     name: '更多',
     href: '/menu',
