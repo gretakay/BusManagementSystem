@@ -56,7 +56,7 @@ const HomePage = () => {
   return (
     <Layout>
       <div className="h-full bg-gray-50 overflow-y-auto">
-        <div className="p-6">
+        <div className="max-w-6xl mx-auto px-4 lg:px-6 py-6">
           {/* 頁面標題 */}
           <div className="mb-6">
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
