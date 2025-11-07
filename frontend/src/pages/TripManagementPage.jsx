@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import StationManager from '../components/StationManager';
 
 const TripManagementPage = () => {
   const [trips, setTrips] = useState([]);
@@ -26,8 +27,7 @@ const TripManagementPage = () => {
         type: 'outbound',
         date: '',
         time: '08:00',
-        fromLocation: '',
-        toLocation: '',
+        stations: [], // 改為站點陣列，支援多站點
         estimatedDuration: '2',
         notes: ''
       }
@@ -78,8 +78,11 @@ const TripManagementPage = () => {
           type: 'outbound',
           date: '2025-11-15',
           time: '08:00',
-          fromLocation: '台北車站',
-          toLocation: '陽明山國家公園',
+          stations: [
+            { id: 1, name: '台北車站', type: 'pickup', stopDuration: 0 },
+            { id: 4, name: '西門町', type: 'pickup', stopDuration: 10 },
+            { id: 6, name: '陽明山國家公園', type: 'dropoff', stopDuration: 0 }
+          ],
           estimatedDuration: '1.5',
           vehicleAssigned: 'ABC-1234',
           leaderAssigned: '領隊小王',
@@ -90,8 +93,11 @@ const TripManagementPage = () => {
           type: 'return',
           date: '2025-11-15',
           time: '17:00',
-          fromLocation: '陽明山國家公園',
-          toLocation: '台北車站',
+          stations: [
+            { id: 6, name: '陽明山國家公園', type: 'pickup', stopDuration: 0 },
+            { id: 4, name: '西門町', type: 'dropoff', stopDuration: 5 },
+            { id: 1, name: '台北車站', type: 'dropoff', stopDuration: 0 }
+          ],
           estimatedDuration: '1.5',
           vehicleAssigned: 'ABC-1234',
           leaderAssigned: '領隊小王',
@@ -122,8 +128,10 @@ const TripManagementPage = () => {
           type: 'outbound',
           date: '2025-11-20',
           time: '09:00',
-          fromLocation: '松山機場',
-          toLocation: '九份老街',
+          stations: [
+            { id: 2, name: '松山機場', type: 'pickup', stopDuration: 0 },
+            { id: 5, name: '九份老街', type: 'dropoff', stopDuration: 0 }
+          ],
           estimatedDuration: '1',
           status: 'planning'
         },
@@ -132,8 +140,10 @@ const TripManagementPage = () => {
           type: 'return',
           date: '2025-11-21',
           time: '15:00',
-          fromLocation: '九份老街',
-          toLocation: '松山機場',
+          stations: [
+            { id: 5, name: '九份老街', type: 'pickup', stopDuration: 0 },
+            { id: 2, name: '松山機場', type: 'dropoff', stopDuration: 0 }
+          ],
           estimatedDuration: '1',
           status: 'planning'
         }
@@ -162,8 +172,10 @@ const TripManagementPage = () => {
           type: 'outbound',
           date: '2025-11-25',
           time: '07:00',
-          fromLocation: '台北車站',
-          toLocation: '花蓮火車站',
+          stations: [
+            { id: 1, name: '台北車站', type: 'pickup', stopDuration: 0 },
+            { id: 8, name: '花蓮火車站', type: 'dropoff', stopDuration: 0 }
+          ],
           estimatedDuration: '3',
           vehicleAssigned: 'DEF-5678',
           leaderAssigned: '領隊阿明',
@@ -174,8 +186,10 @@ const TripManagementPage = () => {
           type: 'intermediate',
           date: '2025-11-26',
           time: '08:30',
-          fromLocation: '花蓮市區',
-          toLocation: '太魯閣國家公園',
+          stations: [
+            { id: 8, name: '花蓮火車站', type: 'pickup', stopDuration: 0 },
+            { name: '太魯閣國家公園', type: 'dropoff', stopDuration: 0 }
+          ],
           estimatedDuration: '0.5',
           vehicleAssigned: 'GHI-9012',
           leaderAssigned: '領隊小美',
@@ -186,8 +200,10 @@ const TripManagementPage = () => {
           type: 'return',
           date: '2025-11-27',
           time: '16:00',
-          fromLocation: '花蓮火車站',
-          toLocation: '台北車站',
+          stations: [
+            { id: 8, name: '花蓮火車站', type: 'pickup', stopDuration: 0 },
+            { id: 1, name: '台北車站', type: 'dropoff', stopDuration: 0 }
+          ],
           estimatedDuration: '3',
           vehicleAssigned: 'DEF-5678',
           leaderAssigned: '領隊阿明',
@@ -227,8 +243,7 @@ const TripManagementPage = () => {
           type: 'outbound',
           date: formData.startDate,
           time: '08:00',
-          fromLocation: formData.departureLocation,
-          toLocation: formData.destination,
+          stations: [],
           estimatedDuration: '2',
           notes: ''
         }
@@ -240,8 +255,7 @@ const TripManagementPage = () => {
           type: 'outbound',
           date: formData.startDate,
           time: '08:00',
-          fromLocation: formData.departureLocation,
-          toLocation: formData.destination,
+          stations: [],
           estimatedDuration: '2',
           notes: ''
         },
@@ -250,8 +264,7 @@ const TripManagementPage = () => {
           type: 'return',
           date: formData.endDate || formData.startDate,
           time: '17:00',
-          fromLocation: formData.destination,
-          toLocation: formData.departureLocation,
+          stations: [],
           estimatedDuration: '2',
           notes: ''
         }
@@ -263,8 +276,7 @@ const TripManagementPage = () => {
           type: 'outbound',
           date: formData.startDate,
           time: '08:00',
-          fromLocation: formData.departureLocation,
-          toLocation: formData.destination,
+          stations: [],
           estimatedDuration: '2',
           notes: ''
         }
@@ -284,8 +296,7 @@ const TripManagementPage = () => {
       type: 'intermediate',
       date: formData.endDate || formData.startDate,
       time: '09:00',
-      fromLocation: '',
-      toLocation: '',
+      stations: [],
       estimatedDuration: '1',
       notes: ''
     };
@@ -312,6 +323,65 @@ const TripManagementPage = () => {
     }));
   };
 
+  const updateSegmentStations = (segmentId, stations) => {
+    setFormData(prev => ({
+      ...prev,
+      segments: prev.segments.map(s => 
+        s.id === segmentId ? { ...s, stations } : s
+      )
+    }));
+  };
+
+  const addStationToSegment = (segmentId, station, stopDuration = 0) => {
+    const stationWithDuration = {
+      ...station,
+      type: 'pickup', // 預設為上車點，使用者可以後續修改
+      stopDuration
+    };
+    
+    setFormData(prev => ({
+      ...prev,
+      segments: prev.segments.map(s => 
+        s.id === segmentId 
+          ? { ...s, stations: [...s.stations, stationWithDuration] }
+          : s
+      )
+    }));
+  };
+
+  const removeStationFromSegment = (segmentId, stationIndex) => {
+    setFormData(prev => ({
+      ...prev,
+      segments: prev.segments.map(s => 
+        s.id === segmentId 
+          ? { ...s, stations: s.stations.filter((_, index) => index !== stationIndex) }
+          : s
+      )
+    }));
+  };
+
+  const updateStationInSegment = (segmentId, stationIndex, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      segments: prev.segments.map(s => 
+        s.id === segmentId 
+          ? {
+              ...s,
+              stations: s.stations.map((station, index) => 
+                index === stationIndex ? { ...station, [field]: value } : station
+              )
+            }
+          : s
+      )
+    }));
+  };
+
+  const getRouteDisplay = (stations) => {
+    if (!stations || stations.length === 0) return '尚未設定路線';
+    if (stations.length === 1) return stations[0].name;
+    return stations.map(s => s.name).join(' → ');
+  };
+
   const resetForm = () => {
     setFormData({
       tripName: '',
@@ -331,8 +401,7 @@ const TripManagementPage = () => {
           type: 'outbound',
           date: '',
           time: '08:00',
-          fromLocation: '',
-          toLocation: '',
+          stations: [],
           estimatedDuration: '2',
           notes: ''
         }
@@ -570,7 +639,7 @@ const TripManagementPage = () => {
                           )}
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                           <Input
                             label="日期"
                             type="date"
@@ -588,22 +657,83 @@ const TripManagementPage = () => {
                           />
 
                           <Input
-                            label="起點"
-                            type="text"
-                            value={segment.fromLocation}
-                            onChange={(e) => updateSegment(segment.id, 'fromLocation', e.target.value)}
-                            placeholder="出發地點"
-                            required
+                            label="預估車程（小時）"
+                            type="number"
+                            min="0.5"
+                            max="12"
+                            step="0.5"
+                            value={segment.estimatedDuration}
+                            onChange={(e) => updateSegment(segment.id, 'estimatedDuration', e.target.value)}
                           />
+                        </div>
 
-                          <Input
-                            label="終點"
-                            type="text"
-                            value={segment.toLocation}
-                            onChange={(e) => updateSegment(segment.id, 'toLocation', e.target.value)}
-                            placeholder="目的地"
-                            required
-                          />
+                        {/* 站點路線管理 */}
+                        <div className="mt-4">
+                          <h5 className="text-sm font-medium text-gray-900 mb-3">
+                            路線設定 ({segment.stations?.length || 0} 個站點)
+                          </h5>
+                          
+                          {/* 當前路線顯示 */}
+                          {segment.stations && segment.stations.length > 0 && (
+                            <div className="mb-4 p-3 bg-white rounded-lg border border-gray-200">
+                              <div className="text-sm font-medium text-gray-700 mb-2">當前路線：</div>
+                              <div className="space-y-2">
+                                {segment.stations.map((station, stationIndex) => (
+                                  <div key={stationIndex} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                    <div className="flex items-center space-x-3">
+                                      <span className="text-sm font-medium text-gray-600">
+                                        {stationIndex + 1}.
+                                      </span>
+                                      <span className="font-medium">{station.name}</span>
+                                      <select
+                                        value={station.type || 'pickup'}
+                                        onChange={(e) => updateStationInSegment(segment.id, stationIndex, 'type', e.target.value)}
+                                        className="text-xs px-2 py-1 border border-gray-300 rounded"
+                                      >
+                                        <option value="pickup">上車點</option>
+                                        <option value="dropoff">下車點</option>
+                                        <option value="transfer">轉乘點</option>
+                                      </select>
+                                      {station.stopDuration > 0 && (
+                                        <span className="text-xs text-gray-500">
+                                          停留 {station.stopDuration} 分鐘
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        max="60"
+                                        value={station.stopDuration || 0}
+                                        onChange={(e) => updateStationInSegment(segment.id, stationIndex, 'stopDuration', parseInt(e.target.value))}
+                                        className="w-16 text-xs px-2 py-1 border border-gray-300 rounded"
+                                        placeholder="停留分鐘"
+                                      />
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => removeStationFromSegment(segment.id, stationIndex)}
+                                        className="text-red-600 border-red-200 hover:bg-red-50"
+                                      >
+                                        移除
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 站點選擇器 */}
+                          <div className="border border-gray-200 rounded-lg p-3">
+                            <div className="text-sm font-medium text-gray-700 mb-2">選擇站點：</div>
+                            <StationManager
+                              mode="single"
+                              onStationSelect={(station) => addStationToSegment(segment.id, station, 0)}
+                            />
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
@@ -622,15 +752,12 @@ const TripManagementPage = () => {
                             </select>
                           </div>
 
-                          <Input
-                            label="預估車程（小時）"
-                            type="number"
-                            min="0.5"
-                            max="12"
-                            step="0.5"
-                            value={segment.estimatedDuration}
-                            onChange={(e) => updateSegment(segment.id, 'estimatedDuration', e.target.value)}
-                          />
+                          <div className="flex items-end">
+                            <div className="text-sm text-gray-600">
+                              <div className="font-medium">路線預覽：</div>
+                              <div className="text-gray-900">{getRouteDisplay(segment.stations)}</div>
+                            </div>
+                          </div>
                         </div>
 
                         <div className="mt-3">
@@ -718,7 +845,10 @@ const TripManagementPage = () => {
                         </div>
                         <div>
                           <span className="font-medium">路線：</span>
-                          {trip.departureLocation} → {trip.destination}
+                          {trip.segments && trip.segments.length > 0 
+                            ? getRouteDisplay(trip.segments[0].stations)
+                            : `${trip.departureLocation} → ${trip.destination}`
+                          }
                         </div>
                         <div>
                           <span className="font-medium">人數：</span>
@@ -809,10 +939,33 @@ const TripManagementPage = () => {
                                   
                                   <div className="text-sm text-gray-600 mb-2">
                                     <span className="font-medium">路線：</span>
-                                    {segment.fromLocation} → {segment.toLocation}
+                                    {getRouteDisplay(segment.stations)}
                                     <span className="ml-4 font-medium">預估車程：</span>
                                     {segment.estimatedDuration} 小時
                                   </div>
+
+                                  {/* 站點詳細資訊 */}
+                                  {segment.stations && segment.stations.length > 1 && (
+                                    <div className="text-sm text-gray-600 mb-2">
+                                      <div className="font-medium mb-1">站點詳情：</div>
+                                      <div className="space-y-1 ml-2">
+                                        {segment.stations.map((station, stationIndex) => (
+                                          <div key={stationIndex} className="flex items-center space-x-2">
+                                            <span className="text-xs text-gray-400">{stationIndex + 1}.</span>
+                                            <span>{station.name}</span>
+                                            <span className="text-xs px-1 py-0.5 bg-gray-100 rounded">
+                                              {station.type === 'pickup' ? '上車' : station.type === 'dropoff' ? '下車' : '轉乘'}
+                                            </span>
+                                            {station.stopDuration > 0 && (
+                                              <span className="text-xs text-orange-600">
+                                                停留{station.stopDuration}分鐘
+                                              </span>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
 
                                   {(segment.vehicleAssigned || segment.leaderAssigned) && (
                                     <div className="text-sm text-gray-600">
