@@ -49,18 +49,18 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* 使用網格佈局，讓登入區域真正利用螢幕空間 */}
-      <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-        {/* 登入表單區域 */}
-        <div className="flex items-center justify-center p-4 sm:p-6 lg:p-8 lg:col-span-1 xl:col-span-2">
-          <div className="w-full max-w-md lg:max-w-lg xl:max-w-xl">{/* 在網格內部限制寬度 */}
+    <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* 滿版設計：移除所有邊距和容器限制 */}
+      <div className="min-h-screen w-full grid grid-cols-1 lg:grid-cols-2">
+        {/* 左側：登入表單區域 - 手機全寬，桌面版一半 */}
+        <div className="flex items-center justify-center p-0 sm:p-2 lg:p-4">
+          <div className="w-full">{/* 手機版完全全寬 */}
         {/* 主登入卡片 */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
+        <div className="bg-white/80 backdrop-blur-xl rounded-none sm:rounded-lg lg:rounded-2xl shadow-2xl border border-white/20 overflow-hidden min-h-screen sm:min-h-0">{/* 手機版無圓角、全高度 */}
           {/* 頭部區域 */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 sm:p-6 text-center">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <svg className="w-7 h-7 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 sm:p-6 lg:p-8 text-center">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-white/20 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
