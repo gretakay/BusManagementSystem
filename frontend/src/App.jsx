@@ -11,6 +11,7 @@ import VehicleManagementPage from './pages/VehicleManagementPage';
 import TripManagementPage from './pages/TripManagementPage';
 import StationManagementPage from './pages/StationManagementPage';
 import PeopleManagementPage from './pages/PeopleManagementPage';
+import LeaderAssignmentPage from './pages/LeaderAssignmentPage';
 
 // 受保護的路由組件
 const ProtectedRoute = ({ children }) => {
@@ -119,12 +120,7 @@ function App() {
           path="/assignments" 
           element={
             <ProtectedRoute>
-              <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 flex items-center justify-center">
-                <div className="text-center">
-                  <h1 className="text-2xl font-bold text-gray-900 mb-4">領隊指派</h1>
-                  <p className="text-gray-600">領隊與車輛配對管理...</p>
-                </div>
-              </div>
+              <LeaderAssignmentPage />
             </ProtectedRoute>
           } 
         />

@@ -14,6 +14,7 @@ const PeopleManagementPage = () => {
   const [filterTrip, setFilterTrip] = useState('all');
   const [filterGender, setFilterGender] = useState('all');
   const [filterIdentity, setFilterIdentity] = useState('all');
+  const [filterLeader, setFilterLeader] = useState('all');
   const [selectedTrip, setSelectedTrip] = useState('');
   
   const [formData, setFormData] = useState({
@@ -79,7 +80,11 @@ const PeopleManagementPage = () => {
       tripName: '台北陽明山一日遊',
       registeredAt: '2025-11-01T10:00:00',
       status: 'confirmed',
-      qrCode: 'QR001'
+      qrCode: 'QR001',
+      isLeader: true,
+      leaderExpiry: '2025-12-31',
+      leaderAssignedDate: '2025-01-15',
+      leaderStatus: 'active'
     },
     {
       id: 2,
@@ -117,7 +122,11 @@ const PeopleManagementPage = () => {
       tripName: '九份老街文化之旅',
       registeredAt: '2025-11-03T09:15:00',
       status: 'confirmed',
-      qrCode: 'QR003'
+      qrCode: 'QR003',
+      isLeader: true,
+      leaderExpiry: '2025-11-30',
+      leaderAssignedDate: '2025-02-01',
+      leaderStatus: 'active'
     },
     {
       id: 4,
@@ -160,12 +169,15 @@ const PeopleManagementPage = () => {
 
       const matchesGender = filterGender === 'all' || person.gender === filterGender;
       const matchesIdentity = filterIdentity === 'all' || person.identity === filterIdentity;
+      const matchesLeader = filterLeader === 'all' || 
+        (filterLeader === 'leader' && person.isLeader) ||
+        (filterLeader === 'non-leader' && !person.isLeader);
 
-      return matchesSearch && matchesTrip && matchesGender && matchesIdentity;
+      return matchesSearch && matchesTrip && matchesGender && matchesIdentity && matchesLeader;
     });
 
     setFilteredPeople(filtered);
-  }, [searchTerm, filterTrip, filterGender, filterIdentity, people]);
+  }, [searchTerm, filterTrip, filterGender, filterIdentity, filterLeader, people]);
 
   const handleCreatePerson = (e) => {
     e.preventDefault();
@@ -224,6 +236,43 @@ const PeopleManagementPage = () => {
   const handleDeletePerson = (personId) => {
     if (window.confirm('確定要刪除這位人員嗎？')) {
       setPeople(prev => prev.filter(person => person.id !== personId));
+    }
+  };
+
+  // 指派為領隊
+  const handleAssignLeader = (personId) => {
+    const expiryDate = new Date();
+    expiryDate.setFullYear(expiryDate.getFullYear() + 1); // 預設一年期限
+    
+    if (window.confirm('確定要指派此人員為領隊嗎？領隊帳號效期為一年。')) {
+      setPeople(prev => prev.map(person =>
+        person.id === personId
+          ? {
+              ...person,
+              isLeader: true,
+              leaderExpiry: expiryDate.toISOString().split('T')[0],
+              leaderAssignedDate: new Date().toISOString().split('T')[0],
+              leaderStatus: 'active'
+            }
+          : person
+      ));
+    }
+  };
+
+  // 取消領隊資格
+  const handleRevokeLeader = (personId) => {
+    if (window.confirm('確定要取消此人員的領隊資格嗎？')) {
+      setPeople(prev => prev.map(person =>
+        person.id === personId
+          ? {
+              ...person,
+              isLeader: false,
+              leaderExpiry: null,
+              leaderAssignedDate: null,
+              leaderStatus: null
+            }
+          : person
+      ));
     }
   };
 
@@ -349,7 +398,7 @@ const PeopleManagementPage = () => {
         </div>
 
         {/* 統計資訊 */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 text-center">
             <div className="text-2xl font-bold text-purple-600">{people.length}</div>
             <div className="text-sm text-gray-600">總人數</div>
@@ -373,6 +422,12 @@ const PeopleManagementPage = () => {
             <div className="text-sm text-gray-600">已分配行程</div>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 text-center">
+            <div className="text-2xl font-bold text-indigo-600">
+              {people.filter(p => p.isLeader).length}
+            </div>
+            <div className="text-sm text-gray-600">🎖️ 領隊</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 text-center">
             <div className="text-2xl font-bold text-orange-600">
               {people.filter(p => p.specialNeeds && p.specialNeeds.length > 0).length}
             </div>
@@ -382,7 +437,7 @@ const PeopleManagementPage = () => {
 
         {/* 搜尋和篩選 */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div className="lg:col-span-2">
               <Input
                 type="text"
@@ -431,6 +486,16 @@ const PeopleManagementPage = () => {
                   {identity}
                 </option>
               ))}
+            </select>
+
+            <select
+              value={filterLeader}
+              onChange={(e) => setFilterLeader(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            >
+              <option value="all">全部人員</option>
+              <option value="leader">🎖️ 僅領隊</option>
+              <option value="non-leader">👥 非領隊</option>
             </select>
           </div>
         </div>
@@ -720,6 +785,15 @@ const PeopleManagementPage = () => {
                         <span className="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">
                           {person.identity}
                         </span>
+                        {person.isLeader && (
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            person.leaderStatus === 'active' 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            🎖️ 領隊
+                          </span>
+                        )}
                         <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(person.status)}`}>
                           {getStatusLabel(person.status)}
                         </span>
@@ -743,6 +817,32 @@ const PeopleManagementPage = () => {
                           </div>
                         )}
                       </div>
+
+                      {person.isLeader && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <span className="text-green-600 font-medium">🎖️ 領隊資訊</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <span className="font-medium text-gray-700">指派日期：</span>
+                              <span className="text-gray-600">{person.leaderAssignedDate}</span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">帳號效期：</span>
+                              <span className={`${new Date(person.leaderExpiry) < new Date() ? 'text-red-600' : 'text-gray-600'}`}>
+                                {person.leaderExpiry}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">狀態：</span>
+                              <span className={`${person.leaderStatus === 'active' ? 'text-green-600' : 'text-yellow-600'}`}>
+                                {person.leaderStatus === 'active' ? '正常' : '即將到期'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {person.specialNeeds && person.specialNeeds.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-3">
@@ -778,6 +878,25 @@ const PeopleManagementPage = () => {
                       >
                         編輯
                       </Button>
+                      {!person.isLeader ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAssignLeader(person.id)}
+                          className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                        >
+                          指派領隊
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRevokeLeader(person.id)}
+                          className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                        >
+                          取消領隊
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"
