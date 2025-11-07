@@ -49,8 +49,12 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-3 py-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md sm:max-w-lg lg:max-w-xl xl:max-w-2xl mx-auto">{/* 桌面版更寬的容器 */}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* 使用網格佈局，讓登入區域真正利用螢幕空間 */}
+      <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+        {/* 登入表單區域 */}
+        <div className="flex items-center justify-center p-4 sm:p-6 lg:p-8 lg:col-span-1 xl:col-span-2">
+          <div className="w-full max-w-md lg:max-w-lg xl:max-w-xl">{/* 在網格內部限制寬度 */}
         {/* 主登入卡片 */}
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
           {/* 頭部區域 */}
@@ -188,6 +192,38 @@ const LoginPage = () => {
                 <p>需要管理員先在系統中</p>
                 <p>指派學員為領隊角色</p>
                 <p>才能使用學號登入</p>
+              </div>
+            </div>
+          </div>
+        </div>
+          </div>
+        </div>
+        
+        {/* 右側裝飾區域 - 大螢幕才顯示 */}
+        <div className="hidden lg:block bg-gradient-to-br from-blue-600 to-purple-700 relative overflow-hidden">
+          <div className="absolute inset-0 bg-black/10"></div>
+          <div className="relative h-full flex items-center justify-center p-8">
+            <div className="text-center text-white">
+              <div className="w-24 h-24 mx-auto mb-6 bg-white/20 rounded-full flex items-center justify-center">
+                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                </svg>
+              </div>
+              <h2 className="text-3xl font-bold mb-4">智能化管理</h2>
+              <p className="text-xl text-blue-100 mb-6">提升旅遊體驗的專業平台</p>
+              <div className="space-y-4 text-left">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-white rounded-full mr-3"></div>
+                  <span>即時車輛追蹤</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-white rounded-full mr-3"></div>
+                  <span>QR碼快速登車</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-white rounded-full mr-3"></div>
+                  <span>智能人員配置</span>
+                </div>
               </div>
             </div>
           </div>

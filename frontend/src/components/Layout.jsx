@@ -6,13 +6,18 @@ import MobileBottomNav from './MobileBottomNav';
 const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // 手機版預設關閉
   const [isMobile, setIsMobile] = useState(false);
   const user = authService.getCurrentUser();
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      // 電腦版預設開啟側邊欄，手機版預設關閉
+      if (!mobile) {
+        setSidebarOpen(true);
+      }
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
@@ -82,7 +87,7 @@ const Layout = ({ children }) => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col lg:flex-row">{/* 修正為 flex 佈局 */}
       {/* 手機端頂部導航 - 只在小螢幕顯示 */}
       <div className="block lg:hidden bg-white/80 backdrop-blur-lg shadow-sm border-b border-gray-200/50 sticky top-0 z-30">
         <div className="px-4 py-3 flex items-center justify-between">
@@ -116,9 +121,9 @@ const Layout = ({ children }) => {
       </div>
 
       {/* 側邊欄 - 電腦版固定顯示，手機版可收合 */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 lg:w-80 bg-white/95 backdrop-blur-xl shadow-2xl transform transition-all duration-300 ease-out ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 lg:static lg:inset-0`}>
+      <div className={`fixed lg:relative inset-y-0 left-0 z-50 w-64 xl:w-80 bg-white/95 backdrop-blur-xl shadow-2xl transform transition-all duration-300 ease-out ${
+        !isMobile ? 'translate-x-0' : (sidebarOpen ? 'translate-x-0' : '-translate-x-full')
+      } lg:translate-x-0 lg:flex-shrink-0`}>{/* 桌面版用相對定位，flex-shrink-0 防止壓縮 */}
         <div className="flex flex-col h-full">
           {/* Logo 區域 */}
           <div className="flex items-center justify-between h-16 lg:h-20 px-4 lg:px-6 bg-gradient-to-r from-blue-600 to-purple-600">
@@ -209,9 +214,9 @@ const Layout = ({ children }) => {
         />
       )}
 
-      {/* 主要內容區域 - 響應式邊距調整 */}
-      <div className="lg:pl-64 xl:pl-80">
-        <main className="min-h-screen pb-20 lg:pb-0">
+      {/* 主要內容區域 - 手機版全寬，桌面版 flex-1 充滿剩餘空間 */}
+      <div className="flex-1 w-full lg:pl-0">
+        <main className="min-h-screen pb-20 lg:pb-0 w-full">
           {children}
         </main>
       </div>
