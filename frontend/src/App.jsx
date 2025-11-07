@@ -9,6 +9,7 @@ import DatabaseManagementPage from './pages/DatabaseManagementPage';
 import SystemSettingsPage from './pages/SystemSettingsPage';
 import VehicleManagementPage from './pages/VehicleManagementPage';
 import TripManagementPage from './pages/TripManagementPage';
+import StationManagementPage from './pages/StationManagementPage';
 
 // 受保護的路由組件
 const ProtectedRoute = ({ children }) => {
@@ -91,6 +92,15 @@ function App() {
           element={
             <ProtectedRoute>
               <TripManagementPage />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/stations" 
+          element={
+            <ProtectedRoute>
+              <StationManagementPage />
             </ProtectedRoute>
           } 
         />
