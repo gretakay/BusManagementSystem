@@ -209,7 +209,7 @@ const Layout = ({ children }) => {
         />
       )}
 
-      {/* 主要內容區域 - 電腦版有左邊距，手機版沒有 */}
+      {/* 主要內容區域 - 響應式邊距調整 */}
       <div className="lg:pl-64 xl:pl-80">
         <main className="min-h-screen pb-20 lg:pb-0">
           {children}
