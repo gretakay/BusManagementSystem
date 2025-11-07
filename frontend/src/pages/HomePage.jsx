@@ -63,53 +63,54 @@ const HomePage = () => {
 
   return (
     <Layout>
-      {/* 頁面標題 */}
-      <div className="mb-6">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-            <div className="mb-4 lg:mb-0">
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
-                歡迎回來，{user?.displayName}
-              </h1>
-              <p className="text-gray-600 text-sm lg:text-base">
-                {new Date().toLocaleDateString('zh-TW', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric',
-                  weekday: 'long'
-                })}
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-              <div className="flex items-center space-x-2 text-sm text-gray-500">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span>系統運行正常</span>
+      <div className="w-full h-full">
+        {/* 頁面標題 */}
+        <div className="px-6 pt-6 pb-0">
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+              <div className="mb-4 lg:mb-0">
+                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+                  歡迎回來，{user?.displayName}
+                </h1>
+                <p className="text-gray-600 text-sm lg:text-base">
+                  {new Date().toLocaleDateString('zh-TW', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    weekday: 'long'
+                  })}
+                </p>
               </div>
-              <div className="flex items-center space-x-2 px-3 py-1.5 bg-gradient-to-r from-purple-100 to-indigo-100 rounded-lg">
-                <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span>系統運行正常</span>
+                </div>
+                <div className="flex items-center space-x-2 px-3 py-1.5 bg-gradient-to-r from-purple-100 to-indigo-100 rounded-lg">
+                  <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span className="text-sm font-medium text-purple-700">{user?.roles?.join(' · ')}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <div className="px-6 py-3">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+              <div className="flex items-center">
+                <svg className="w-4 h-4 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
-                <span className="text-sm font-medium text-purple-700">{user?.roles?.join(' · ')}</span>
+                <p className="text-yellow-700 font-medium text-sm">{error}</p>
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        )}
 
-      {error && (
-        <div className="mb-6">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-            <div className="flex items-center">
-              <svg className="w-4 h-4 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-              <p className="text-yellow-700 font-medium text-sm">{error}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="space-y-6">
+        <div className="px-6 py-6 space-y-6">
             {/* 領隊專用區域 */}
             {isLeader && (
               <div className="space-y-4">
@@ -332,6 +333,8 @@ const HomePage = () => {
               </div>
             </div>
           </div>
+        </div>
+      </div>
     </Layout>
   );
 };
