@@ -221,11 +221,11 @@ const Layout = ({ children }) => {
       </div>
 
       {/* 桌面版：典型後台佈局 */}
-      <div className="hidden lg:flex min-h-screen bg-gray-100">
+      <div className="hidden lg:flex h-screen bg-gray-100 overflow-hidden">
         <div className="flex w-full">
           {/* 桌面版側邊欄 */}
           <div className="w-80 bg-gradient-to-b from-purple-50 to-indigo-50 border-r border-gray-200">
-            <div className="flex flex-col h-full">
+            <div className="h-full flex flex-col">
               {/* Logo 區域 */}
               <div className="flex items-center h-20 px-6 bg-gradient-to-r from-purple-500 to-indigo-600">
                 <div className="flex items-center space-x-3">
@@ -293,7 +293,7 @@ const Layout = ({ children }) => {
           </div>
 
           {/* 桌面版主內容區域 */}
-          <div className="flex-1 bg-gray-50 overflow-y-auto">
+          <div className="flex-1 h-full overflow-y-auto">
             <main className="h-full">
               {children}
             </main>
