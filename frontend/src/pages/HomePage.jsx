@@ -22,21 +22,36 @@ const HomePage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError('');
       
       // 如果是管理員，載入行程列表
       if (isAdmin) {
-        const tripsData = await tripService.getTrips();
-        setTrips(tripsData.data || []);
+        try {
+          const tripsData = await tripService.getTrips();
+          setTrips(tripsData.data || []);
+        } catch (tripsError) {
+          // 靜默處理行程載入錯誤，讓 trips 保持空陣列
+          console.log('行程資料載入失敗，顯示空列表');
+          setTrips([]);
+        }
       }
       
       // 如果是領隊，載入我的車輛
       if (isLeader) {
-        const busesData = await busService.getMyBuses();
-        setMyBuses(busesData.data || []);
+        try {
+          const busesData = await busService.getMyBuses();
+          setMyBuses(busesData.data || []);
+        } catch (busesError) {
+          // 靜默處理車輛載入錯誤，讓 buses 保持空陣列
+          console.log('車輛資料載入失敗，顯示空列表');
+          setMyBuses([]);
+        }
       }
     } catch (error) {
-      setError('載入資料失敗');
-      console.error('載入資料錯誤:', error);
+      // 只有在嚴重錯誤時才顯示錯誤訊息
+      if (error?.response?.status !== 404) {
+        setError('部分資料載入失敗，請稍後重試');
+      }
     } finally {
       setLoading(false);
     }
@@ -48,9 +63,8 @@ const HomePage = () => {
 
   return (
     <Layout>
-      <div className="p-4">
-        {/* 頁面標題 */}
-        <div className="mb-6">
+      {/* 頁面標題 */}
+      <div className="mb-6">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
             <div className="mb-4 lg:mb-0">
@@ -84,12 +98,12 @@ const HomePage = () => {
 
       {error && (
         <div className="mb-6">
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
             <div className="flex items-center">
-              <svg className="w-4 h-4 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg className="w-4 h-4 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
-              <p className="text-red-700 font-medium text-sm">{error}</p>
+              <p className="text-yellow-700 font-medium text-sm">{error}</p>
             </div>
           </div>
         </div>
@@ -318,7 +332,6 @@ const HomePage = () => {
               </div>
             </div>
           </div>
-        </div>
     </Layout>
   );
 };
