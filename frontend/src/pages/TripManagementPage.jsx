@@ -18,8 +18,33 @@ const TripManagementPage = () => {
     description: '',
     contactPerson: '',
     contactPhone: '',
-    status: 'planning'
+    status: 'planning',
+    tripType: 'round_trip', // 'round_trip', 'one_way', 'multi_day'
+    segments: [
+      {
+        id: 1,
+        type: 'outbound',
+        date: '',
+        time: '08:00',
+        fromLocation: '',
+        toLocation: '',
+        estimatedDuration: '2',
+        notes: ''
+      }
+    ]
   });
+
+  const tripTypes = [
+    { value: 'one_way', label: '單程', description: '只有去程，不返回' },
+    { value: 'round_trip', label: '來回', description: '去程和回程在同一天' },
+    { value: 'multi_day', label: '多日遊', description: '跨多天的行程，可能有多個段次' }
+  ];
+
+  const segmentTypes = [
+    { value: 'outbound', label: '去程', icon: '🚌', color: 'text-green-600' },
+    { value: 'return', label: '回程', icon: '🏠', color: 'text-blue-600' },
+    { value: 'intermediate', label: '中段', icon: '📍', color: 'text-purple-600' }
+  ];
 
   const statusOptions = [
     { value: 'planning', label: '規劃中', color: 'bg-yellow-100 text-yellow-800', icon: '📋' },
@@ -45,7 +70,34 @@ const TripManagementPage = () => {
       status: 'confirmed',
       createdAt: '2025-11-01T10:00:00',
       vehiclesAssigned: 1,
-      leadersAssigned: 1
+      leadersAssigned: 1,
+      tripType: 'round_trip',
+      segments: [
+        {
+          id: 1,
+          type: 'outbound',
+          date: '2025-11-15',
+          time: '08:00',
+          fromLocation: '台北車站',
+          toLocation: '陽明山國家公園',
+          estimatedDuration: '1.5',
+          vehicleAssigned: 'ABC-1234',
+          leaderAssigned: '領隊小王',
+          status: 'confirmed'
+        },
+        {
+          id: 2,
+          type: 'return',
+          date: '2025-11-15',
+          time: '17:00',
+          fromLocation: '陽明山國家公園',
+          toLocation: '台北車站',
+          estimatedDuration: '1.5',
+          vehicleAssigned: 'ABC-1234',
+          leaderAssigned: '領隊小王',
+          status: 'confirmed'
+        }
+      ]
     },
     {
       id: 2,
@@ -62,7 +114,30 @@ const TripManagementPage = () => {
       status: 'planning',
       createdAt: '2025-11-05T14:30:00',
       vehiclesAssigned: 0,
-      leadersAssigned: 0
+      leadersAssigned: 0,
+      tripType: 'multi_day',
+      segments: [
+        {
+          id: 1,
+          type: 'outbound',
+          date: '2025-11-20',
+          time: '09:00',
+          fromLocation: '松山機場',
+          toLocation: '九份老街',
+          estimatedDuration: '1',
+          status: 'planning'
+        },
+        {
+          id: 2,
+          type: 'return',
+          date: '2025-11-21',
+          time: '15:00',
+          fromLocation: '九份老街',
+          toLocation: '松山機場',
+          estimatedDuration: '1',
+          status: 'planning'
+        }
+      ]
     },
     {
       id: 3,
@@ -79,7 +154,46 @@ const TripManagementPage = () => {
       status: 'in_progress',
       createdAt: '2025-10-28T09:15:00',
       vehiclesAssigned: 2,
-      leadersAssigned: 2
+      leadersAssigned: 2,
+      tripType: 'multi_day',
+      segments: [
+        {
+          id: 1,
+          type: 'outbound',
+          date: '2025-11-25',
+          time: '07:00',
+          fromLocation: '台北車站',
+          toLocation: '花蓮火車站',
+          estimatedDuration: '3',
+          vehicleAssigned: 'DEF-5678',
+          leaderAssigned: '領隊阿明',
+          status: 'confirmed'
+        },
+        {
+          id: 2,
+          type: 'intermediate',
+          date: '2025-11-26',
+          time: '08:30',
+          fromLocation: '花蓮市區',
+          toLocation: '太魯閣國家公園',
+          estimatedDuration: '0.5',
+          vehicleAssigned: 'GHI-9012',
+          leaderAssigned: '領隊小美',
+          status: 'confirmed'
+        },
+        {
+          id: 3,
+          type: 'return',
+          date: '2025-11-27',
+          time: '16:00',
+          fromLocation: '花蓮火車站',
+          toLocation: '台北車站',
+          estimatedDuration: '3',
+          vehicleAssigned: 'DEF-5678',
+          leaderAssigned: '領隊阿明',
+          status: 'confirmed'
+        }
+      ]
     }
   ];
 
@@ -103,6 +217,101 @@ const TripManagementPage = () => {
     resetForm();
   };
 
+  const handleTripTypeChange = (tripType) => {
+    let defaultSegments = [];
+    
+    if (tripType === 'one_way') {
+      defaultSegments = [
+        {
+          id: 1,
+          type: 'outbound',
+          date: formData.startDate,
+          time: '08:00',
+          fromLocation: formData.departureLocation,
+          toLocation: formData.destination,
+          estimatedDuration: '2',
+          notes: ''
+        }
+      ];
+    } else if (tripType === 'round_trip') {
+      defaultSegments = [
+        {
+          id: 1,
+          type: 'outbound',
+          date: formData.startDate,
+          time: '08:00',
+          fromLocation: formData.departureLocation,
+          toLocation: formData.destination,
+          estimatedDuration: '2',
+          notes: ''
+        },
+        {
+          id: 2,
+          type: 'return',
+          date: formData.endDate || formData.startDate,
+          time: '17:00',
+          fromLocation: formData.destination,
+          toLocation: formData.departureLocation,
+          estimatedDuration: '2',
+          notes: ''
+        }
+      ];
+    } else if (tripType === 'multi_day') {
+      defaultSegments = [
+        {
+          id: 1,
+          type: 'outbound',
+          date: formData.startDate,
+          time: '08:00',
+          fromLocation: formData.departureLocation,
+          toLocation: formData.destination,
+          estimatedDuration: '2',
+          notes: ''
+        }
+      ];
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      tripType,
+      segments: defaultSegments
+    }));
+  };
+
+  const addSegment = () => {
+    const newSegment = {
+      id: formData.segments.length + 1,
+      type: 'intermediate',
+      date: formData.endDate || formData.startDate,
+      time: '09:00',
+      fromLocation: '',
+      toLocation: '',
+      estimatedDuration: '1',
+      notes: ''
+    };
+    
+    setFormData(prev => ({
+      ...prev,
+      segments: [...prev.segments, newSegment]
+    }));
+  };
+
+  const removeSegment = (segmentId) => {
+    setFormData(prev => ({
+      ...prev,
+      segments: prev.segments.filter(s => s.id !== segmentId)
+    }));
+  };
+
+  const updateSegment = (segmentId, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      segments: prev.segments.map(s => 
+        s.id === segmentId ? { ...s, [field]: value } : s
+      )
+    }));
+  };
+
   const resetForm = () => {
     setFormData({
       tripName: '',
@@ -114,13 +323,36 @@ const TripManagementPage = () => {
       description: '',
       contactPerson: '',
       contactPhone: '',
-      status: 'planning'
+      status: 'planning',
+      tripType: 'round_trip',
+      segments: [
+        {
+          id: 1,
+          type: 'outbound',
+          date: '',
+          time: '08:00',
+          fromLocation: '',
+          toLocation: '',
+          estimatedDuration: '2',
+          notes: ''
+        }
+      ]
     });
   };
 
   const getStatusDisplay = (status) => {
     const statusConfig = statusOptions.find(s => s.value === status);
     return statusConfig || { label: status, color: 'bg-gray-100 text-gray-800', icon: '❓' };
+  };
+
+  const getSegmentTypeDisplay = (type) => {
+    const typeConfig = segmentTypes.find(t => t.value === type);
+    return typeConfig || { label: type, icon: '📍', color: 'text-gray-600' };
+  };
+
+  const getTripTypeDisplay = (type) => {
+    const typeConfig = tripTypes.find(t => t.value === type);
+    return typeConfig ? typeConfig.label : type;
   };
 
   const getDaysCount = (startDate, endDate) => {
@@ -198,6 +430,24 @@ const TripManagementPage = () => {
                   required
                 />
                 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">行程類型</label>
+                  <select
+                    value={formData.tripType}
+                    onChange={(e) => handleTripTypeChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  >
+                    {tripTypes.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {type.label} - {type.description}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   label="預估人數"
                   type="number"
@@ -207,6 +457,15 @@ const TripManagementPage = () => {
                   onChange={(e) => setFormData(prev => ({ ...prev, estimatedPassengers: parseInt(e.target.value) }))}
                   required
                 />
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">總天數</label>
+                  <div className="text-lg font-medium text-gray-900 px-3 py-2 bg-gray-50 rounded-lg">
+                    {formData.startDate && formData.endDate 
+                      ? getDaysCount(formData.startDate, formData.endDate) 
+                      : '-'} 天
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -267,6 +526,129 @@ const TripManagementPage = () => {
                 />
               </div>
 
+              {/* 段次管理 */}
+              <div className="border-t pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">行程段次安排</h3>
+                  {formData.tripType === 'multi_day' && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addSegment}
+                    >
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      新增段次
+                    </Button>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  {formData.segments.map((segment, index) => {
+                    const segmentDisplay = getSegmentTypeDisplay(segment.type);
+                    return (
+                      <div key={segment.id} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-lg">{segmentDisplay.icon}</span>
+                            <span className={`font-medium ${segmentDisplay.color}`}>
+                              段次 {index + 1}: {segmentDisplay.label}
+                            </span>
+                          </div>
+                          {formData.segments.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeSegment(segment.id)}
+                              className="text-red-600 border-red-200 hover:bg-red-50"
+                            >
+                              移除
+                            </Button>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                          <Input
+                            label="日期"
+                            type="date"
+                            value={segment.date}
+                            onChange={(e) => updateSegment(segment.id, 'date', e.target.value)}
+                            required
+                          />
+                          
+                          <Input
+                            label="時間"
+                            type="time"
+                            value={segment.time}
+                            onChange={(e) => updateSegment(segment.id, 'time', e.target.value)}
+                            required
+                          />
+
+                          <Input
+                            label="起點"
+                            type="text"
+                            value={segment.fromLocation}
+                            onChange={(e) => updateSegment(segment.id, 'fromLocation', e.target.value)}
+                            placeholder="出發地點"
+                            required
+                          />
+
+                          <Input
+                            label="終點"
+                            type="text"
+                            value={segment.toLocation}
+                            onChange={(e) => updateSegment(segment.id, 'toLocation', e.target.value)}
+                            placeholder="目的地"
+                            required
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">段次類型</label>
+                            <select
+                              value={segment.type}
+                              onChange={(e) => updateSegment(segment.id, 'type', e.target.value)}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                              {segmentTypes.map((type) => (
+                                <option key={type.value} value={type.value}>
+                                  {type.icon} {type.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <Input
+                            label="預估車程（小時）"
+                            type="number"
+                            min="0.5"
+                            max="12"
+                            step="0.5"
+                            value={segment.estimatedDuration}
+                            onChange={(e) => updateSegment(segment.id, 'estimatedDuration', e.target.value)}
+                          />
+                        </div>
+
+                        <div className="mt-3">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">備註</label>
+                          <textarea
+                            value={segment.notes || ''}
+                            onChange={(e) => updateSegment(segment.id, 'notes', e.target.value)}
+                            rows={2}
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="特殊需求或注意事項..."
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">行程描述</label>
                 <textarea
@@ -319,6 +701,12 @@ const TripManagementPage = () => {
                         </span>
                         <span className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">
                           {daysCount} 天
+                        </span>
+                        <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+                          {getTripTypeDisplay(trip.tripType)}
+                        </span>
+                        <span className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded-full">
+                          {trip.segments?.length || 0} 段次
                         </span>
                       </div>
                       
@@ -379,7 +767,7 @@ const TripManagementPage = () => {
                   {/* 展開的詳細資訊 */}
                   {selectedTrip === trip.id && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
                           <h4 className="font-medium text-gray-900 mb-2">聯絡資訊</h4>
                           <div className="text-sm text-gray-600 space-y-1">
@@ -392,8 +780,68 @@ const TripManagementPage = () => {
                           <p className="text-sm text-gray-600">{trip.description}</p>
                         </div>
                       </div>
+
+                      {/* 段次詳情 */}
+                      {trip.segments && trip.segments.length > 0 && (
+                        <div className="mb-4">
+                          <h4 className="font-medium text-gray-900 mb-3">段次安排</h4>
+                          <div className="space-y-3">
+                            {trip.segments.map((segment, index) => {
+                              const segmentDisplay = getSegmentTypeDisplay(segment.type);
+                              return (
+                                <div key={segment.id} className="p-3 bg-gray-50 rounded-lg">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-lg">{segmentDisplay.icon}</span>
+                                      <span className={`font-medium ${segmentDisplay.color}`}>
+                                        段次 {index + 1}: {segmentDisplay.label}
+                                      </span>
+                                      {segment.status && (
+                                        <span className={`px-2 py-1 text-xs rounded-full ${getStatusDisplay(segment.status).color}`}>
+                                          {getStatusDisplay(segment.status).label}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                      {segment.date} {segment.time}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="text-sm text-gray-600 mb-2">
+                                    <span className="font-medium">路線：</span>
+                                    {segment.fromLocation} → {segment.toLocation}
+                                    <span className="ml-4 font-medium">預估車程：</span>
+                                    {segment.estimatedDuration} 小時
+                                  </div>
+
+                                  {(segment.vehicleAssigned || segment.leaderAssigned) && (
+                                    <div className="text-sm text-gray-600">
+                                      {segment.vehicleAssigned && (
+                                        <span className="mr-4">
+                                          <span className="font-medium">車輛：</span>{segment.vehicleAssigned}
+                                        </span>
+                                      )}
+                                      {segment.leaderAssigned && (
+                                        <span>
+                                          <span className="font-medium">領隊：</span>{segment.leaderAssigned}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {segment.notes && (
+                                    <div className="text-sm text-gray-500 mt-2 italic">
+                                      備註：{segment.notes}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                       
-                      <div className="mt-4 flex space-x-2">
+                      <div className="flex space-x-2">
                         <Button size="sm" variant="outline" className="text-blue-600 border-blue-200 hover:bg-blue-50">
                           車輛安排
                         </Button>
