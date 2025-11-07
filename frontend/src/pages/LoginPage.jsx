@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import FullScreenLoader from '../components/ui/FullScreenLoader';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isLeaderMode, setIsLeaderMode] = useState(true);
+  const [redirecting, setRedirecting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,7 +31,11 @@ const LoginPage = () => {
       }
 
       await authService.login(formData.userIdentifier, password);
-      navigate('/', { replace: true });
+      setRedirecting(true);
+      // 短暫延遲讓用戶看到成功狀態
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 500);
     } catch (error) {
       setError(error.response?.data?.message || '登入失敗，請檢查帳號密碼');
     } finally {
@@ -43,6 +49,11 @@ const LoginPage = () => {
       [e.target.name]: e.target.value,
     });
   };
+
+  // 顯示全螢幕載入器 (登入成功後跳轉時)
+  if (redirecting) {
+    return <FullScreenLoader message="登入成功，跳轉中..." />;
+  }
 
   return (
     <div className="fixed inset-0 w-screen min-h-screen flex items-center justify-center bg-gray-100">
@@ -137,18 +148,11 @@ const LoginPage = () => {
               loading={loading}
               disabled={loading}
             >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  登入中...
-                </div>
-              ) : (
-                <>
-                  {isLeaderMode ? '領隊登入' : '管理員登入'}
-                  <svg className="w-4 h-4 ml-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </>
+              {isLeaderMode ? '領隊登入' : '管理員登入'}
+              {!loading && (
+                <svg className="w-4 h-4 ml-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
               )}
             </Button>
           </form>

@@ -3,6 +3,7 @@ import { authService } from '../services/authService';
 import { tripService, busService } from '../services/busService';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import Layout from '../components/Layout';
+import FullScreenLoader from '../components/ui/FullScreenLoader';
 
 const HomePage = () => {
   const [trips, setTrips] = useState([]);
@@ -42,13 +43,7 @@ const HomePage = () => {
   };
 
   if (loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-        </div>
-      </Layout>
-    );
+    return <FullScreenLoader message="載入資料中..." />;
   }
 
   return (
