@@ -8,6 +8,7 @@ import UserManagementPage from './pages/UserManagementPage';
 import DatabaseManagementPage from './pages/DatabaseManagementPage';
 import SystemSettingsPage from './pages/SystemSettingsPage';
 import VehicleManagementPage from './pages/VehicleManagementPage';
+import TripManagementPage from './pages/TripManagementPage';
 
 // 受保護的路由組件
 const ProtectedRoute = ({ children }) => {
@@ -89,12 +90,7 @@ function App() {
           path="/trips" 
           element={
             <ProtectedRoute>
-              <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
-                <div className="text-center">
-                  <h1 className="text-2xl font-bold text-gray-900 mb-4">行程管理</h1>
-                  <p className="text-gray-600">此功能正在開發中...</p>
-                </div>
-              </div>
+              <TripManagementPage />
             </ProtectedRoute>
           } 
         />
