@@ -56,10 +56,10 @@ const HomePage = () => {
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="w-full px-1 sm:px-4 lg:px-8 xl:px-12 py-2 sm:py-4 lg:py-6">{/* 手機版最小邊距，桌面版充足邊距 */}
+        <div className="w-full px-0 sm:px-2 lg:px-4 py-2 sm:py-3 lg:py-4">{/* 真正的全寬佈局 */}
           {/* 頁面標題 */}
-          <div className="mb-2 sm:mb-4 lg:mb-6">{/* 響應式間距 */}
-            <div className="bg-white/80 backdrop-blur-lg rounded-lg sm:rounded-xl lg:rounded-3xl p-2 sm:p-4 lg:p-6 shadow-xl border border-white/20">{/* 響應式圓角和內邊距 */}
+          <div className="mb-1 sm:mb-2 lg:mb-3">{/* 緊湊間距 */}
+            <div className="bg-white/80 backdrop-blur-lg rounded-none sm:rounded-lg lg:rounded-xl p-2 sm:p-3 lg:p-4 shadow-xl border border-white/20">{/* 手機版無圓角，全寬 */}
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                 <div className="mb-1 lg:mb-0">
                   <h1 className="text-base sm:text-lg lg:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-0.5 sm:mb-1">
@@ -103,7 +103,7 @@ const HomePage = () => {
             </div>
           )}
 
-          <div className="space-y-2 sm:space-y-3 lg:space-y-6">{/* 響應式間距 */}
+          <div className="space-y-1 sm:space-y-2 lg:space-y-3">{/* 更緊湊的間距 */}
             {/* 領隊專用區域 */}
             {isLeader && (
               <div className="space-y-2 sm:space-y-3">
