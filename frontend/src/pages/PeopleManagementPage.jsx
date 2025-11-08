@@ -9,7 +9,6 @@ const PeopleManagementPage = () => {
   const [filteredPeople, setFilteredPeople] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [showImportForm, setShowImportForm] = useState(false);
   const [editingPerson, setEditingPerson] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTrip, setFilterTrip] = useState('all');
@@ -345,46 +344,7 @@ const PeopleManagementPage = () => {
     setSelectedTrip('');
   };
 
-  const handleImportData = () => {
-    // TODO: 實際的檔案匯入功能
-    const sampleData = [
-      {
-        studentId: 'S005',
-        monastery: '新竹精舍',
-        name: '張慈悲',
-        dharmaName: '慈悲',
-        identity: '師姊',
-        gender: 'female'
-      },
-      {
-        studentId: 'S006',
-        monastery: '桃園精舍',
-        name: '劉智慧',
-        dharmaName: '智慧',
-        identity: '師兄',
-        gender: 'male'
-      }
-    ];
-
-    const importedPeople = sampleData.map((data, index) => ({
-      id: people.length + index + 1,
-      ...data,
-      phone: '',
-      emergencyContact: '',
-      emergencyPhone: '',
-      specialNeeds: [],
-      notes: '',
-      tripId: null,
-      tripName: null,
-      registeredAt: new Date().toISOString(),
-      status: 'pending',
-      qrCode: `QR${String(people.length + index + 1).padStart(3, '0')}`
-    }));
-
-    setPeople(prev => [...importedPeople, ...prev]);
-    setShowImportForm(false);
-    alert(`成功匯入 ${sampleData.length} 筆資料`);
-  };
+  // 內建的示範匯入已移除，請使用集中化的匯入頁面（若需要可導向 /trips/import 或建立新的匯入頁面）。
 
   const getGenderDisplay = (gender) => {
     const genderConfig = genders.find(g => g.value === gender);
@@ -425,16 +385,6 @@ const PeopleManagementPage = () => {
               <p className="text-gray-600">管理參團人員資料，包含學號、精舍別、法名等資訊</p>
             </div>
             <div className="flex space-x-3">
-              <Button
-                onClick={() => setShowImportForm(true)}
-                variant="outline"
-                className="border-green-200 text-green-700 hover:bg-green-50"
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                </svg>
-                匯入資料
-              </Button>
               <Button
                 onClick={() => setShowCreateForm(true)}
                 className="bg-gradient-to-r from-purple-500 to-indigo-600"
@@ -551,54 +501,7 @@ const PeopleManagementPage = () => {
           </div>
         </div>
 
-        {/* 匯入資料表單 */}
-        {showImportForm && (
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">匯入人員資料</h2>
-            <div className="space-y-4">
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <h3 className="font-medium text-blue-900 mb-2">匯入格式說明</h3>
-                <p className="text-blue-800 text-sm mb-2">Excel/CSV 檔案應包含以下欄位：</p>
-                <div className="text-blue-700 text-sm space-y-1">
-                  <div>• 學號 (必填)</div>
-                  <div>• 精舍別 (必填)</div>
-                  <div>• 姓名 (必填)</div>
-                  <div>• 法名 (必填)</div>
-                  <div>• 身分別 (必填)</div>
-                  <div>• 性別 (必填)</div>
-                  <div>• 電話 (選填)</div>
-                  <div>• 緊急聯絡人 (選填)</div>
-                  <div>• 緊急聯絡電話 (選填)</div>
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">選擇檔案</label>
-                <input
-                  type="file"
-                  accept=".xlsx,.xls,.csv"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                />
-              </div>
-
-              <div className="flex justify-end space-x-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowImportForm(false)}
-                >
-                  取消
-                </Button>
-                <Button
-                  onClick={handleImportData}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  確認匯入
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* 已移除內嵌的匯入表單（改為集中匯入頁面 /trips/import） */}
 
         {/* 新增/編輯人員表單 */}
         {showCreateForm && (
