@@ -61,6 +61,17 @@ export const peopleService = {
     const response = await apiClient.post('/people', personData);
     return response.data;
   },
+  // 更新人員
+  async updatePerson(id, personData) {
+    const response = await apiClient.put(`/people/${id}`, personData);
+    return response.data;
+  },
+
+  // 刪除(停用)人員
+  async deletePerson(id) {
+    const response = await apiClient.delete(`/people/${id}`);
+    return response.data;
+  },
 };
 
 export const reportService = {

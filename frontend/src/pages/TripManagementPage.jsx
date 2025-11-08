@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { tripService } from '../services/busService';
 import Layout from '../components/Layout';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -235,23 +236,74 @@ const TripManagementPage = () => {
   ];
 
   useEffect(() => {
-    setTrips(mockTrips);
+    let mounted = true;
+    const load = async () => {
+      try {
+        const data = await tripService.getTrips();
+        // map backend fields to frontend expected shape where possible
+        const mapped = (data || []).map(t => ({
+          id: t.id,
+          tripName: t.name || t.tripName,
+          startDate: t.date || t.startDate,
+          endDate: t.date || t.endDate,
+          departureLocation: t.departureLocation || t.departure || '',
+          destination: t.destination || '',
+          estimatedPassengers: t.totalCapacity || t.estimatedPassengers || 0,
+          actualPassengers: t.totalOnBoard || t.actualPassengers || 0,
+          description: t.description || '',
+          contactPerson: t.contactPerson || '',
+          contactPhone: t.contactPhone || '',
+          status: t.status || 'planning',
+          tripType: t.tripType || 'round_trip',
+          boardingMode: t.boardingMode || (t.buses && t.buses.length ? 'assigned' : 'free'),
+          segments: t.segments || []
+        }));
+        if (mounted) setTrips(mapped.length ? mapped : mockTrips);
+      } catch (err) {
+        console.error('Failed to load trips', err);
+        if (mounted) setTrips(mockTrips);
+      }
+    };
+    load();
+    return () => { mounted = false; };
   }, []);
 
   const handleCreateTrip = (e) => {
     e.preventDefault();
-    // TODO: 實際的 API 呼叫
-    const newTrip = {
-      id: trips.length + 1,
-      ...formData,
-      actualPassengers: 0,
-      createdAt: new Date().toISOString(),
-      vehiclesAssigned: 0,
-      leadersAssigned: 0
-    };
-    setTrips(prev => [newTrip, ...prev]);
-    setShowCreateForm(false);
-    resetForm();
+    (async () => {
+      try {
+        const payload = {
+          Name: formData.tripName,
+          Date: formData.startDate,
+          Direction: formData.tripType,
+          Description: formData.description
+        };
+        const created = await tripService.createTrip(payload);
+        const mapped = {
+          id: created.id,
+          tripName: created.name || formData.tripName,
+          startDate: created.date || formData.startDate,
+          endDate: created.date || formData.endDate || formData.startDate,
+          departureLocation: formData.departureLocation,
+          destination: formData.destination,
+          estimatedPassengers: formData.estimatedPassengers,
+          actualPassengers: 0,
+          description: created.description || formData.description,
+          contactPerson: formData.contactPerson,
+          contactPhone: formData.contactPhone,
+          status: created.status || 'planning',
+          tripType: formData.tripType,
+          boardingMode: formData.boardingMode,
+          segments: formData.segments
+        };
+        setTrips(prev => [mapped, ...prev]);
+        setShowCreateForm(false);
+        resetForm();
+      } catch (err) {
+        console.error('Create trip failed', err);
+        alert('建立行程失敗，請確認是否有權限或稍後再試');
+      }
+    })();
   };
 
   const handleTripTypeChange = (tripType) => {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { tripService, scanService } from '../services/busService';
 import Layout from '../components/Layout';
 import { Button } from '../components/ui/Button';
 
@@ -93,9 +94,25 @@ const QRScanPage = () => {
   ];
 
   useEffect(() => {
-    setTrips(mockTrips);
-    setVehicles(mockVehicles);
-    setPeople(mockPeople);
+    let mounted = true;
+    const load = async () => {
+      try {
+        const data = await tripService.getTrips();
+        const mapped = (data || []).map(t => ({
+          id: t.id,
+          name: t.name || t.tripName,
+          date: t.date || t.startDate,
+          status: t.status || 'planning',
+          boardingMode: t.boardingMode || (t.buses && t.buses.length ? 'assigned' : 'free')
+        }));
+        if (mounted) setTrips(mapped.length ? mapped : mockTrips);
+      } catch (err) {
+        console.error('Failed to load trips', err);
+        if (mounted) setTrips(mockTrips);
+      }
+    };
+    load();
+    return () => { mounted = false; };
   }, []);
 
   // 取得當前行程的上車模式
@@ -119,130 +136,38 @@ const QRScanPage = () => {
       });
       return;
     }
-
     setLoading(true);
-    
-    // 模擬掃描延遲
-    setTimeout(() => {
-      const person = people.find(p => p.qrCode === qrCode);
-      const currentTrip = trips.find(t => t.id === parseInt(selectedTrip));
-      
-      if (!person) {
+    try {
+      const resp = await scanService.scan(parseInt(selectedTrip), parseInt(selectedVehicle), qrCode);
+      // resp expected { success, message, action, person, busStatus }
+      if (resp && resp.success) {
+        // append basic boarding record from response.busStatus or person info
+        setBoardingRecords(prev => [
+          { id: prev.length + 1, personId: resp.person?.id, tripId: parseInt(selectedTrip), vehicleId: parseInt(selectedVehicle), boardedAt: new Date().toISOString(), scannedBy: 'leader' },
+          ...prev
+        ]);
         setScanResult({
-          success: false,
-          message: `找不到 QR 碼：${qrCode}`,
-          type: 'error'
+          success: true,
+          message: resp.message || '上車成功',
+          person: resp.person,
+          vehicle: { id: parseInt(selectedVehicle), name: resp.busStatus?.busName || '' },
+          type: 'success'
         });
-        setLoading(false);
-        return;
-      }
-
-      // 檢查是否為該行程的乘客
-      if (person.tripId !== parseInt(selectedTrip)) {
-        setScanResult({
-          success: false,
-          message: `${person.name}(${person.dharmaName}) 不是此行程的乘客`,
-          person: person,
-          type: 'error'
-        });
-        setLoading(false);
-        return;
-      }
-
-      // 檢查是否已經上車
-      const alreadyBoarded = boardingRecords.find(
-        r => r.personId === person.id && r.tripId === parseInt(selectedTrip)
-      );
-
-      if (alreadyBoarded) {
-        setScanResult({
-          success: false,
-          message: `${person.name}(${person.dharmaName}) 已經上車`,
-          person: person,
-          boardedAt: alreadyBoarded.boardedAt,
-          vehicleName: vehicles.find(v => v.id === alreadyBoarded.vehicleId)?.name,
-          type: 'warning'
-        });
-        setLoading(false);
-        return;
-      }
-
-      const boardingMode = getCurrentTripBoardingMode();
-
-      if (boardingMode === 'assigned') {
-        // 指派模式：檢查車輛指派
-        if (!selectedVehicle) {
-          setScanResult({
-            success: false,
-            message: '請先選擇車輛',
-            type: 'error'
-          });
-          setLoading(false);
-          return;
-        }
-
-        if (person.assignedVehicleId !== parseInt(selectedVehicle)) {
-          const assignedVehicle = vehicles.find(v => v.id === person.assignedVehicleId);
-          setScanResult({
-            success: false,
-            message: `${person.name}(${person.dharmaName}) 應搭乘 ${assignedVehicle?.name || '未指派車輛'}`,
-            person: person,
-            assignedVehicle: assignedVehicle,
-            type: 'error'
-          });
-          setLoading(false);
-          return;
-        }
       } else {
-        // 自由模式：檢查車輛容量
-        if (!selectedVehicle) {
-          setScanResult({
-            success: false,
-            message: '請先選擇車輛',
-            type: 'error'
-          });
-          setLoading(false);
-          return;
-        }
-
-        const currentVehicle = vehicles.find(v => v.id === parseInt(selectedVehicle));
-        const currentBoardingCount = boardingRecords.filter(
-          r => r.vehicleId === parseInt(selectedVehicle) && r.tripId === parseInt(selectedTrip)
-        ).length;
-
-        if (currentBoardingCount >= currentVehicle.capacity) {
-          setScanResult({
-            success: false,
-            message: `車輛 ${currentVehicle.name} 已滿載 (${currentBoardingCount}/${currentVehicle.capacity})`,
-            type: 'error'
-          });
-          setLoading(false);
-          return;
-        }
+        setScanResult({
+          success: false,
+          message: resp?.message || '掃描失敗',
+          person: resp?.person,
+          type: 'error'
+        });
       }
-
-      // 成功上車
-      const newRecord = {
-        id: boardingRecords.length + 1,
-        personId: person.id,
-        tripId: parseInt(selectedTrip),
-        vehicleId: parseInt(selectedVehicle),
-        boardedAt: new Date().toISOString(),
-        scannedBy: 'current_leader' // 實際應該是當前領隊
-      };
-
-      setBoardingRecords(prev => [...prev, newRecord]);
-      
-      setScanResult({
-        success: true,
-        message: `${person.name}(${person.dharmaName}) 上車成功！`,
-        person: person,
-        vehicle: vehicles.find(v => v.id === parseInt(selectedVehicle)),
-        type: 'success'
-      });
-      
+    } catch (err) {
+      console.error('Scan API error', err);
+      // fallback to local simulation behavior
+      setScanResult({ success: false, message: '掃描失敗（API 回應錯誤）', type: 'error' });
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   // 手動輸入 QR 碼
@@ -409,17 +334,11 @@ const QRScanPage = () => {
                 {/* 模擬掃描按鈕 */}
                 <div className="mt-6 space-y-2">
                   <p className="text-sm text-gray-500">測試用模擬掃描：</p>
-                  <div className="flex justify-center space-x-2">
-                    <Button size="sm" onClick={() => handleQRScan('QR001')}>
-                      QR001 (王德明)
-                    </Button>
-                    <Button size="sm" onClick={() => handleQRScan('QR002')}>
-                      QR002 (李慧心)
-                    </Button>
-                    <Button size="sm" onClick={() => handleQRScan('QR003')}>
-                      QR003 (釋悟空)
-                    </Button>
-                  </div>
+                    <div className="flex justify-center space-x-2">
+                      <Button size="sm" onClick={() => handleQRScan('QR001')}>QR001</Button>
+                      <Button size="sm" onClick={() => handleQRScan('QR002')}>QR002</Button>
+                      <Button size="sm" onClick={() => handleQRScan('QR003')}>QR003</Button>
+                    </div>
                 </div>
               </div>
             ) : (

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { peopleService } from '../services/busService';
 import Layout from '../components/Layout';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -150,8 +151,26 @@ const PeopleManagementPage = () => {
   ];
 
   useEffect(() => {
-    setPeople(mockPeople);
-    setFilteredPeople(mockPeople);
+    let mounted = true;
+    const load = async () => {
+      try {
+        // request a large page size to retrieve many records for management UI
+        const data = await peopleService.getPeople({ page: 1, pageSize: 500 });
+        if (mounted) {
+          const list = data || [];
+          setPeople(list);
+          setFilteredPeople(list);
+        }
+      } catch (err) {
+        console.error('Failed to load people', err);
+        if (mounted) {
+          setPeople(mockPeople);
+          setFilteredPeople(mockPeople);
+        }
+      }
+    };
+    load();
+    return () => { mounted = false; };
   }, []);
 
   useEffect(() => {
@@ -181,19 +200,32 @@ const PeopleManagementPage = () => {
 
   const handleCreatePerson = (e) => {
     e.preventDefault();
-    const newPerson = {
-      id: people.length + 1,
-      ...formData,
-      specialNeeds: formData.specialNeeds ? formData.specialNeeds.split(',').map(s => s.trim()) : [],
-      tripName: selectedTrip ? trips.find(t => t.id === parseInt(selectedTrip))?.name : null,
-      registeredAt: new Date().toISOString(),
-      status: 'confirmed',
-      qrCode: `QR${String(people.length + 1).padStart(3, '0')}`
-    };
-    
-    setPeople(prev => [newPerson, ...prev]);
-    resetForm();
-    setShowCreateForm(false);
+    (async () => {
+      try {
+        const payload = {
+          studentId: formData.studentId,
+          monastery: formData.monastery,
+          name: formData.name,
+          dharmaName: formData.dharmaName,
+          identity: formData.identity,
+          gender: formData.gender,
+          phone: formData.phone,
+          emergencyContact: formData.emergencyContact,
+          emergencyPhone: formData.emergencyPhone,
+          specialNeeds: formData.specialNeeds ? formData.specialNeeds.split(',').map(s => s.trim()) : [],
+          notes: formData.notes,
+          tripId: formData.tripId
+        };
+        const created = await peopleService.createPerson(payload);
+        // created returned detail DTO; append to list
+        setPeople(prev => [created, ...prev]);
+        resetForm();
+        setShowCreateForm(false);
+      } catch (err) {
+        console.error('Create person failed', err);
+        alert('新增人員失敗，請確認權限或稍後再試');
+      }
+    })();
   };
 
   const handleEditPerson = (person) => {
@@ -218,24 +250,43 @@ const PeopleManagementPage = () => {
 
   const handleUpdatePerson = (e) => {
     e.preventDefault();
-    setPeople(prev => prev.map(person =>
-      person.id === editingPerson
-        ? {
-            ...person,
-            ...formData,
-            specialNeeds: formData.specialNeeds ? formData.specialNeeds.split(',').map(s => s.trim()) : [],
-            tripName: selectedTrip ? trips.find(t => t.id === parseInt(selectedTrip))?.name : null
-          }
-        : person
-    ));
-    resetForm();
-    setShowCreateForm(false);
-    setEditingPerson(null);
+    (async () => {
+      try {
+        const payload = {
+          Name: formData.name,
+          DharmaName: formData.dharmaName,
+          Monastery: formData.monastery,
+          Role: formData.identity,
+          Remark: formData.notes,
+          IsActive: true
+        };
+        await peopleService.updatePerson(editingPerson, payload);
+        setPeople(prev => prev.map(person =>
+          person.id === editingPerson
+            ? { ...person, ...formData, specialNeeds: formData.specialNeeds ? formData.specialNeeds.split(',').map(s => s.trim()) : [] }
+            : person
+        ));
+        resetForm();
+        setShowCreateForm(false);
+        setEditingPerson(null);
+      } catch (err) {
+        console.error('Update person failed', err);
+        alert('更新人員失敗，請確認權限或稍後再試');
+      }
+    })();
   };
 
   const handleDeletePerson = (personId) => {
     if (window.confirm('確定要刪除這位人員嗎？')) {
-      setPeople(prev => prev.filter(person => person.id !== personId));
+      (async () => {
+        try {
+          await peopleService.deletePerson(personId);
+          setPeople(prev => prev.filter(person => person.id !== personId));
+        } catch (err) {
+          console.error('Delete person failed', err);
+          alert('刪除人員失敗，請確認權限或稍後再試');
+        }
+      })();
     }
   };
 
