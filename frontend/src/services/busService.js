@@ -32,19 +32,19 @@ export const busService = {
 export const tripService = {
   // 取得行程列表
   async getTrips() {
-    const response = await apiClient.get('/trips');
+    const response = await apiClient.get('/trip');
     return response.data;
   },
 
   // 取得行程詳細資訊
   async getTripById(id) {
-    const response = await apiClient.get(`/trips/${id}`);
+    const response = await apiClient.get(`/trip/${id}`);
     return response.data;
   },
 
   // 建立新行程
   async createTrip(tripData) {
-    const response = await apiClient.post('/trips', tripData);
+    const response = await apiClient.post('/trip', tripData);
     return response.data;
   },
 };
