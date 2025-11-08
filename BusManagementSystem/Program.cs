@@ -55,6 +55,21 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
     };
+    // Support reading access_token from query string for SignalR websocket negotiation
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"].FirstOrDefault();
+            var path = context.HttpContext.Request.Path;
+            // If the request is for the SignalR hub, read the token from the query string
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/boarding"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 // Configure Authorization
