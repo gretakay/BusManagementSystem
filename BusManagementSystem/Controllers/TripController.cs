@@ -9,6 +9,8 @@ namespace BusManagementSystem.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    // backward-compatible plural route for published older frontends that call /api/trips
+    [Route("api/trips")]
     [Authorize]
     public class TripController : ControllerBase
     {
