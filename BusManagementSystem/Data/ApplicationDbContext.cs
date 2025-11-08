@@ -18,6 +18,7 @@ namespace BusManagementSystem.Data
         public DbSet<Boarding> Boardings { get; set; }
         public DbSet<Setting> Settings { get; set; }
         public DbSet<TripLeader> TripLeaders { get; set; }
+    public DbSet<ImportRecord> ImportRecords { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -158,6 +159,15 @@ namespace BusManagementSystem.Data
             builder.Entity<ApplicationUser>(entity =>
             {
                 entity.Property(e => e.DisplayName).IsRequired().HasMaxLength(100);
+            });
+
+            // Configure ImportRecord
+            builder.Entity<ImportRecord>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.ImporterUserId).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Summary).HasMaxLength(2000);
+                entity.Property(e => e.CreatedAssignmentIdsJson).HasMaxLength(4000);
             });
         }
     }
