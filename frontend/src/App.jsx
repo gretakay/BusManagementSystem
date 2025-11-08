@@ -13,7 +13,6 @@ import StationManagementPage from './pages/StationManagementPage';
 import PeopleManagementPage from './pages/PeopleManagementPage';
 import LeaderAssignmentPage from './pages/LeaderAssignmentPage';
 import QRScanPage from './pages/QRScanPage';
-import PeopleImportPage from './pages/PeopleImportPage';
 import TripRegistrationImportPage from './pages/TripRegistrationImportPage';
 
 // 受保護的路由組件
@@ -132,14 +131,7 @@ function App() {
           } 
         />
 
-        <Route 
-          path="/people/import"
-          element={
-            <ProtectedRoute>
-              <PeopleImportPage />
-            </ProtectedRoute>
-          }
-        />
+        {/* 人員匯入頁面已移除（專案內已有其他匯入實作） */}
         
         <Route 
           path="/reports" 

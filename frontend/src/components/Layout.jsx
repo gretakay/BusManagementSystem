@@ -102,16 +102,6 @@ const Layout = ({ children }) => {
       roles: ['AdminRead', 'AdminWrite', 'SysAdmin']
     },
     {
-      name: '人員匯入',
-      href: '/people/import',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16v4h10v-4M12 12v8M5 7h14M12 3v4" />
-        </svg>
-      ),
-      roles: ['AdminWrite', 'SysAdmin']
-    },
-    {
       name: '報表',
       href: '/reports',
       icon: (
