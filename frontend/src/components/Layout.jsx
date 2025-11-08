@@ -102,6 +102,16 @@ const Layout = ({ children }) => {
       roles: ['AdminRead', 'AdminWrite', 'SysAdmin']
     },
     {
+      name: '人員匯入',
+      href: '/people/import',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16v4h10v-4M12 12v8M5 7h14M12 3v4" />
+        </svg>
+      ),
+      roles: ['AdminWrite', 'SysAdmin']
+    },
+    {
       name: '報表',
       href: '/reports',
       icon: (
@@ -110,6 +120,16 @@ const Layout = ({ children }) => {
         </svg>
       ),
       roles: ['AdminRead', 'AdminWrite', 'SysAdmin']
+    },
+    {
+      name: '行程報名匯入',
+      href: '/trips/import',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6a2 2 0 012-2h2a2 2 0 012 2v6M7 21h10M12 7V3" />
+        </svg>
+      ),
+      roles: ['AdminWrite', 'SysAdmin']
     },
     {
       name: '帳號管理',
