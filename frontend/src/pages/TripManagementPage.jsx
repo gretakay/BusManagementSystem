@@ -311,10 +311,11 @@ const TripManagementPage = () => {
     (async () => {
       try {
         const payload = {
-          Name: formData.tripName,
-          Date: formData.startDate,
-          Direction: formData.tripType,
-          Description: formData.description
+          tripName: formData.tripName,
+          startDate: formData.startDate,
+          direction: 'outbound',
+          description: formData.description,
+          status: 'draft'
         };
         const created = await tripService.createTrip(payload);
         const mapped = {
