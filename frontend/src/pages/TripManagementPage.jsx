@@ -7,6 +7,26 @@ import { Input } from '../components/ui/Input';
 import StationManager from '../components/StationManager';
 
 const TripManagementPage = () => {
+        // 刪除相關狀態
+        const [showDeleteModal, setShowDeleteModal] = useState(false);
+        const [deletingTrip, setDeletingTrip] = useState(null);
+        // 取消行程（軟刪除）
+        const handleCancelTrip = async () => {
+          if (!deletingTrip) return;
+          try {
+            // 若有串 API，呼叫 tripService.updateTrip({ ...deletingTrip, status: 'cancelled' })
+            setTrips(prev => prev.map(t => t.id === deletingTrip.id ? { ...t, status: 'cancelled' } : t));
+            setShowDeleteModal(false);
+            setDeletingTrip(null);
+          } catch (err) {
+            alert('取消失敗，請稍後再試');
+          }
+        };
+        // 還原行程
+        const handleRestoreTrip = (trip) => {
+          // 若有串 API，呼叫 tripService.updateTrip({ ...trip, status: 'planning' })
+          setTrips(prev => prev.map(t => t.id === trip.id ? { ...t, status: 'planning' } : t));
+        };
       // 分頁、搜尋、篩選狀態
       const [page, setPage] = useState(1);
       const [pageSize, setPageSize] = useState(5);
@@ -1045,6 +1065,32 @@ const TripManagementPage = () => {
                       >
                         編輯
                       </Button>
+                      {trip.status !== 'cancelled' ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setDeletingTrip(trip);
+                            setShowDeleteModal(true);
+                          }}
+                        >
+                          取消行程
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-green-600 border-green-200 hover:bg-green-50"
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleRestoreTrip(trip);
+                          }}
+                        >
+                          還原行程
+                        </Button>
+                      )}
                       {trip.status === 'planning' && (
                         <Button size="sm" className="bg-green-600 hover:bg-green-700">
                           開始執行
@@ -1054,6 +1100,14 @@ const TripManagementPage = () => {
                         <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => alert('管理行程功能待開發')}>管理行程</Button>
                       )}
                     </div>
+                                {/* 刪除確認 Modal */}
+                                <Modal open={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="確認取消行程">
+                                  <div className="mb-4">確定要取消「{deletingTrip?.tripName}」嗎？行程將標記為已取消，可隨時還原。</div>
+                                  <div className="flex justify-end space-x-2">
+                                    <Button variant="outline" onClick={() => setShowDeleteModal(false)}>關閉</Button>
+                                    <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleCancelTrip}>確定取消</Button>
+                                  </div>
+                                </Modal>
                         {/* 編輯行程彈窗，放在最外層 */}
                         <Modal open={showEditModal} onClose={() => setShowEditModal(false)} title="編輯行程">
                           {editingTrip && (

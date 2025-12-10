@@ -1,3 +1,4 @@
+
 import apiClient from './api.js';
 
 export const scanService = {
