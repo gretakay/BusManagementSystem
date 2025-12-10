@@ -30,6 +30,11 @@ export const busService = {
 };
 
 export const tripService = {
+    // 更新行程
+    async updateTrip(tripData) {
+      const response = await apiClient.put(`/trip/${tripData.id}`, tripData);
+      return response.data;
+    },
   // 取得行程列表
   async getTrips() {
     const response = await apiClient.get('/trip');
