@@ -993,7 +993,7 @@ const TripManagementPage = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-lg font-bold text-gray-900">{trip.tripName}</h3>
+                        <h3 className="text-lg font-bold text-gray-900" style={{cursor:'pointer'}} onClick={e => { e.stopPropagation(); setSelectedTrip(selectedTrip === trip.id ? null : trip.id); }}>{trip.tripName}</h3>
                         <span className={`px-2 py-1 text-xs rounded-full ${statusDisplay.color} flex items-center`}>
                           <span className="mr-1">{statusDisplay.icon}</span>
                           {statusDisplay.label}
