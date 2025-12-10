@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { authService } from './services/authService';
 import { signalRService } from './services/signalRService';
 import LoginPage from './pages/LoginPage';
