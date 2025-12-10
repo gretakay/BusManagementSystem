@@ -45,10 +45,10 @@ export const tripService = {
       const dateObj = tripData.startDate ? new Date(tripData.startDate) : new Date();
       const payload = {
         request: {
-          Name: tripData.tripName,
-          Date: dateObj,
-          Status: statusMap[tripData.status] || 'Planning',
-          Description: tripData.description
+          name: tripData.tripName,
+          date: dateObj,
+          status: statusMap[tripData.status] || 'Planning',
+          description: tripData.description
         }
       };
       const response = await apiClient.put(`/trip/${tripData.id}`, payload);
