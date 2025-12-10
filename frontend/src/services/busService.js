@@ -110,21 +110,23 @@ export const tripService = {
     const startDateUtc = toUtcDate(tripData.startDate);
     const endDateUtc = toUtcDate(tripData.endDate);
     const payload = {
-      Name: tripData.tripName,
-      Date: startDateUtc,
-      Description: tripData.description || '',
-      Direction: directionMap[tripData.direction?.toLowerCase()] || directionMap.outbound,
-      Status: statusMap[tripData.status?.toLowerCase()] || statusMap.draft,
-      StartDate: startDateUtc,
-      EndDate: endDateUtc,
-      DepartureLocation: tripData.departureLocation,
-      Destination: tripData.destination,
-      EstimatedPassengers: tripData.estimatedPassengers,
-      ContactPerson: tripData.contactPerson,
-      ContactPhone: tripData.contactPhone,
-      TripType: tripData.tripType,
-      BoardingMode: tripData.boardingMode,
-      Segments: tripData.segments
+      request: {
+        Name: tripData.tripName,
+        Date: startDateUtc,
+        Description: tripData.description || '',
+        Direction: directionMap[tripData.direction?.toLowerCase()] || directionMap.outbound,
+        Status: statusMap[tripData.status?.toLowerCase()] || statusMap.draft,
+        StartDate: startDateUtc,
+        EndDate: endDateUtc,
+        DepartureLocation: tripData.departureLocation,
+        Destination: tripData.destination,
+        EstimatedPassengers: tripData.estimatedPassengers,
+        ContactPerson: tripData.contactPerson,
+        ContactPhone: tripData.contactPhone,
+        TripType: tripData.tripType,
+        BoardingMode: tripData.boardingMode,
+        Segments: tripData.segments
+      }
     };
     try {
       const response = await apiClient.post('/trip', payload);
