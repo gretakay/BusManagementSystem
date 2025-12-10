@@ -137,20 +137,20 @@ const TripManagementPage = () => {
     (async () => {
       try {
         const payload = {
-          Name: formData.tripName,
-          StartDate: formData.startDate,
-          EndDate: formData.endDate,
-          Direction: formData.direction || 'outbound',
-          Description: formData.description,
-          Status: 'draft',
-          DepartureLocation: formData.departureLocation,
-          Destination: formData.destination,
-          EstimatedPassengers: formData.estimatedPassengers,
-          ContactPerson: formData.contactPerson,
-          ContactPhone: formData.contactPhone,
-          TripType: formData.tripType,
-          BoardingMode: formData.boardingMode,
-          Segments: formData.segments
+          tripName: formData.tripName,
+          startDate: formData.startDate,
+          endDate: formData.endDate,
+          direction: formData.direction || 'outbound',
+          description: formData.description,
+          status: 'draft',
+          departureLocation: formData.departureLocation,
+          destination: formData.destination,
+          estimatedPassengers: formData.estimatedPassengers,
+          contactPerson: formData.contactPerson,
+          contactPhone: formData.contactPhone,
+          tripType: formData.tripType,
+          boardingMode: formData.boardingMode,
+          segments: formData.segments
         };
         const created = await tripService.createTrip(payload);
         const mapped = {

@@ -106,12 +106,18 @@ export const tripService = {
 
   // 建立新行程
   async createTrip(tripData) {
+    console.log('createTrip received:', tripData);
+    
+    if (!tripData.tripName || tripData.tripName.trim() === '') {
+      throw new Error('行程名稱為必填');
+    }
+    
     // 新增：所有日期欄位轉 UTC
     const startDateUtc = toUtcDate(tripData.startDate);
     const endDateUtc = toUtcDate(tripData.endDate);
     const payload = {
       request: {
-        Name: tripData.tripName || "新行程", // 預設不為空
+        Name: tripData.tripName.trim(),
         Date: startDateUtc || new Date().toISOString(),
         Description: tripData.description || '',
         Direction: directionMap[tripData.direction?.toLowerCase()] || directionMap.outbound,
@@ -120,7 +126,7 @@ export const tripService = {
         EndDate: endDateUtc || new Date().toISOString(),
         DepartureLocation: tripData.departureLocation || '',
         Destination: tripData.destination || '',
-        EstimatedPassengers: tripData.estimatedPassengers || 0,
+        EstimatedPassengers: parseInt(tripData.estimatedPassengers) || 0,
         ContactPerson: tripData.contactPerson || '',
         ContactPhone: tripData.contactPhone || '',
         TripType: tripData.tripType || 'one_way',
@@ -128,10 +134,13 @@ export const tripService = {
         Segments: tripData.segments || []
       }
     };
+    console.log('API payload to send:', JSON.stringify(payload, null, 2));
     try {
       const response = await apiClient.post('/trip', payload);
+      console.log('API response:', response.data);
       return response.data;
     } catch (err) {
+      console.error('API error:', err.response?.data || err);
       throw new Error('建立行程失敗');
     }
   },
