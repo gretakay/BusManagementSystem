@@ -191,8 +191,6 @@ const TripManagementPage = () => {
   const totalPages = Math.ceil(filteredTrips.length / pageSize);
   const pagedTrips = filteredTrips.slice((page - 1) * pageSize, page * pageSize);
 
-  // ...existing UI rendering code...
-
   // 新增：loading 狀態顯示
   if (loading) {
     return (
@@ -202,13 +200,43 @@ const TripManagementPage = () => {
     );
   }
 
-  // ...existing return JSX (表單、列表、分頁、詳細展開、Modal等)...
-  // 在行程列表 render 區塊加上：
-  // {/* 無資料提示，避免空白畫面 */}
-  // {!loading && pagedTrips.length === 0 && (
-  //   <div className="text-center text-gray-500 py-12">目前尚無行程，請點右上「新增行程」建立。</div>
-  // )}
+  return (
+    <Layout>
+      <div className="p-6 space-y-6">
+        {/* 頁面標題 */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+            <div className="mb-4 lg:mb-0">
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 flex items-center">
+                行程管理
+              </h1>
+              <p className="text-gray-600">建立和管理旅遊行程，追蹤執行進度</p>
+            </div>
+            <Button onClick={() => setShowCreateForm(true)} className="bg-gradient-to-r from-blue-500 to-indigo-600">
+              新增行程
+            </Button>
+          </div>
+        </div>
 
+        {/* 行程列表 */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">行程列表</h2>
+          {/* 無資料提示，避免空白畫面 */}
+          {!loading && pagedTrips.length === 0 && (
+            <div className="text-center text-gray-500 py-12">目前尚無行程，請點右上「新增行程」建立。</div>
+          )}
+          <div className="space-y-4">
+            {pagedTrips.map((trip) => (
+              <div key={trip.id} className="p-4 border border-gray-200 rounded-lg">
+                <h3 className="text-lg font-bold text-gray-900">{trip.tripName}</h3>
+                {/* ...可擴充更多行程資訊... */}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Layout>
+  );
 };
 
 export default TripManagementPage;
