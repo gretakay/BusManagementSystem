@@ -14,6 +14,7 @@ import PeopleManagementPage from './pages/PeopleManagementPage';
 import LeaderAssignmentPage from './pages/LeaderAssignmentPage';
 import QRScanPage from './pages/QRScanPage';
 import TripRegistrationImportPage from './pages/TripRegistrationImportPage';
+import TripManageDetailPage from './pages/TripManageDetailPage';
 
 // 受保護的路由組件
 const ProtectedRoute = ({ children }) => {
@@ -154,6 +155,15 @@ function App() {
               <TripRegistrationImportPage />
             </ProtectedRoute>
           }
+        />
+        
+        <Route 
+          path="/trips/:id/manage" 
+          element={
+            <ProtectedRoute>
+              <TripManageDetailPage />
+            </ProtectedRoute>
+          } 
         />
         
         {/* 系統管理路由 */}

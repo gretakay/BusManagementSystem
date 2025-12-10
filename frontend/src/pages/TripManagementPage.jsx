@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Modal from '../components/ui/Modal';
 import { tripService } from '../services/busService';
 import Layout from '../components/Layout';
@@ -7,6 +8,7 @@ import { Input } from '../components/ui/Input';
 import StationManager from '../components/StationManager';
 
 const TripManagementPage = () => {
+          const navigate = useNavigate();
         // 刪除相關狀態
         const [showDeleteModal, setShowDeleteModal] = useState(false);
         const [deletingTrip, setDeletingTrip] = useState(null);
@@ -1097,7 +1099,10 @@ const TripManagementPage = () => {
                         </Button>
                       )}
                       {trip.status === 'confirmed' && (
-                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => alert('管理行程功能待開發')}>管理行程</Button>
+                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={e => {
+                          e.stopPropagation();
+                          navigate(`/trips/${trip.id}/manage`);
+                        }}>管理行程</Button>
                       )}
                     </div>
                                 {/* 刪除確認 Modal */}
