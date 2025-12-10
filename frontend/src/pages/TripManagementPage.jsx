@@ -91,7 +91,16 @@ const TripManagementPage = () => {
         type: 'outbound',
         date: '',
         time: '08:00',
-        stations: [],
+        stations: [''],
+        estimatedDuration: '2',
+        notes: ''
+      },
+      {
+        id: 2,
+        type: 'return',
+        date: '',
+        time: '17:00',
+        stations: [''],
         estimatedDuration: '2',
         notes: ''
       }
@@ -513,8 +522,13 @@ const TripManagementPage = () => {
                   <div className="mb-2 font-bold text-gray-800">單程</div>
                   <select 
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    value={formData.segments[0]?.stations[0] || ''} 
-                    onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }] }))}
+                    value={formData.segments[0]?.stations?.[0] || ''} 
+                    onChange={e => {
+                      const newSegments = [...formData.segments];
+                      if (!newSegments[0]) newSegments[0] = { stations: [''] };
+                      newSegments[0] = { ...newSegments[0], stations: [e.target.value] };
+                      setFormData(f => ({ ...f, segments: newSegments }));
+                    }}
                   >
                     <option value="">請選擇出發站</option>
                     {availableStations.map(station => (
@@ -529,8 +543,13 @@ const TripManagementPage = () => {
                     <div className="mb-2 font-bold text-gray-800">去程</div>
                     <select 
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      value={formData.segments[0]?.stations[0] || ''} 
-                      onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }, f.segments[1] || {}] }))}
+                      value={formData.segments[0]?.stations?.[0] || ''} 
+                      onChange={e => {
+                        const newSegments = [...formData.segments];
+                        if (!newSegments[0]) newSegments[0] = { stations: [''] };
+                        newSegments[0] = { ...newSegments[0], stations: [e.target.value] };
+                        setFormData(f => ({ ...f, segments: newSegments }));
+                      }}
                     >
                       <option value="">請選擇去程出發站</option>
                       {availableStations.map(station => (
@@ -542,8 +561,13 @@ const TripManagementPage = () => {
                     <div className="mb-2 font-bold text-gray-800">回程</div>
                     <select 
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      value={formData.segments[1]?.stations[0] || ''} 
-                      onChange={e => setFormData(f => ({ ...f, segments: [f.segments[0] || {}, { ...f.segments[1], stations: [e.target.value] }] }))}
+                      value={formData.segments[1]?.stations?.[0] || ''} 
+                      onChange={e => {
+                        const newSegments = [...formData.segments];
+                        if (!newSegments[1]) newSegments[1] = { stations: [''] };
+                        newSegments[1] = { ...newSegments[1], stations: [e.target.value] };
+                        setFormData(f => ({ ...f, segments: newSegments }));
+                      }}
                     >
                       <option value="">請選擇回程出發站</option>
                       {availableStations.map(station => (
@@ -558,8 +582,13 @@ const TripManagementPage = () => {
                   <div className="mb-2 font-bold text-gray-800">僅回程</div>
                   <select 
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    value={formData.segments[0]?.stations[0] || ''} 
-                    onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }] }))}
+                    value={formData.segments[0]?.stations?.[0] || ''} 
+                    onChange={e => {
+                      const newSegments = [...formData.segments];
+                      if (!newSegments[0]) newSegments[0] = { stations: [''] };
+                      newSegments[0] = { ...newSegments[0], stations: [e.target.value] };
+                      setFormData(f => ({ ...f, segments: newSegments }));
+                    }}
                   >
                     <option value="">請選擇回程出發站</option>
                     {availableStations.map(station => (
@@ -650,8 +679,13 @@ const TripManagementPage = () => {
                   <div className="mb-2 font-bold text-gray-800">單程</div>
                   <select 
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    value={formData.segments[0]?.stations[0] || ''} 
-                    onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }] }))}
+                    value={formData.segments[0]?.stations?.[0] || ''} 
+                    onChange={e => {
+                      const newSegments = [...formData.segments];
+                      if (!newSegments[0]) newSegments[0] = { stations: [''] };
+                      newSegments[0] = { ...newSegments[0], stations: [e.target.value] };
+                      setFormData(f => ({ ...f, segments: newSegments }));
+                    }}
                   >
                     <option value="">請選擇出發站</option>
                     {availableStations.map(station => (
@@ -666,8 +700,13 @@ const TripManagementPage = () => {
                     <div className="mb-2 font-bold text-gray-800">去程</div>
                     <select 
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      value={formData.segments[0]?.stations[0] || ''} 
-                      onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }, f.segments[1] || {}] }))}
+                      value={formData.segments[0]?.stations?.[0] || ''} 
+                      onChange={e => {
+                        const newSegments = [...formData.segments];
+                        if (!newSegments[0]) newSegments[0] = { stations: [''] };
+                        newSegments[0] = { ...newSegments[0], stations: [e.target.value] };
+                        setFormData(f => ({ ...f, segments: newSegments }));
+                      }}
                     >
                       <option value="">請選擇去程出發站</option>
                       {availableStations.map(station => (
@@ -679,8 +718,13 @@ const TripManagementPage = () => {
                     <div className="mb-2 font-bold text-gray-800">回程</div>
                     <select 
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      value={formData.segments[1]?.stations[0] || ''} 
-                      onChange={e => setFormData(f => ({ ...f, segments: [f.segments[0] || {}, { ...f.segments[1], stations: [e.target.value] }] }))}
+                      value={formData.segments[1]?.stations?.[0] || ''} 
+                      onChange={e => {
+                        const newSegments = [...formData.segments];
+                        if (!newSegments[1]) newSegments[1] = { stations: [''] };
+                        newSegments[1] = { ...newSegments[1], stations: [e.target.value] };
+                        setFormData(f => ({ ...f, segments: newSegments }));
+                      }}
                     >
                       <option value="">請選擇回程出發站</option>
                       {availableStations.map(station => (
@@ -695,8 +739,13 @@ const TripManagementPage = () => {
                   <div className="mb-2 font-bold text-gray-800">僅回程</div>
                   <select 
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    value={formData.segments[0]?.stations[0] || ''} 
-                    onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }] }))}
+                    value={formData.segments[0]?.stations?.[0] || ''} 
+                    onChange={e => {
+                      const newSegments = [...formData.segments];
+                      if (!newSegments[0]) newSegments[0] = { stations: [''] };
+                      newSegments[0] = { ...newSegments[0], stations: [e.target.value] };
+                      setFormData(f => ({ ...f, segments: newSegments }));
+                    }}
                   >
                     <option value="">請選擇回程出發站</option>
                     {availableStations.map(station => (
