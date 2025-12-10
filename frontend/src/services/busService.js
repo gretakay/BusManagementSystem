@@ -68,18 +68,17 @@ export const tripService = {
     // 新增：所有日期欄位轉 UTC，避免時區誤差
     const dateObj = toUtcDate(tripData.startDate);
     const payload = {
-      request: {
-        Name: tripData.tripName,
-        Date: dateObj,
-        Status: statusMap[tripData.status?.toLowerCase()] || statusMap.draft,
-        Description: tripData.description || '',
-        Direction: directionMap[tripData.direction?.toLowerCase()] || directionMap.outbound
-      }
+      Name: tripData.tripName,
+      Date: dateObj,
+      Status: statusMap[tripData.status?.toLowerCase()] || statusMap.draft,
+      Description: tripData.description || ''
     };
+    console.log('UpdateTrip payload:', payload);
     try {
       const response = await apiClient.put(`/trip/${tripData.id}`, payload);
       return response.data;
     } catch (err) {
+      console.error('UpdateTrip error:', err.response?.data || err);
       throw new Error('更新行程失敗');
     }
   },
@@ -193,6 +192,48 @@ export const reportService = {
       return response.data;
     } catch (err) {
       throw new Error('匯出行程報表失敗');
+    }
+  },
+};
+
+// 站點管理服務
+export const stationService = {
+  // 取得所有站點
+  async getAllStations() {
+    try {
+      const response = await apiClient.get('/station');
+      return response.data;
+    } catch (err) {
+      throw new Error('取得站點清單失敗');
+    }
+  },
+  
+  // 建立新站點
+  async createStation(stationData) {
+    try {
+      const response = await apiClient.post('/station', stationData);
+      return response.data;
+    } catch (err) {
+      throw new Error('建立站點失敗');
+    }
+  },
+  
+  // 更新站點
+  async updateStation(id, stationData) {
+    try {
+      const response = await apiClient.put(`/station/${id}`, stationData);
+      return response.data;
+    } catch (err) {
+      throw new Error('更新站點失敗');
+    }
+  },
+  
+  // 刪除站點
+  async deleteStation(id) {
+    try {
+      await apiClient.delete(`/station/${id}`);
+    } catch (err) {
+      throw new Error('刪除站點失敗');
     }
   },
 };

@@ -1,11 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Modal from '../components/ui/Modal';
-import { tripService } from '../services/busService';
+import { tripService, stationService } from '../services/busService';
 import Layout from '../components/Layout';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import StationManager from '../components/StationManager';
+
+// 臨時站點列表（後續從資料庫載入）
+const DEFAULT_STATIONS = [
+  { id: 1, name: '台北車站', address: '台北市中正區北平西路3號' },
+  { id: 2, name: '板橋車站', address: '新北市板橋區縣民大道二段7號' },
+  { id: 3, name: '台中車站', address: '台中市中區台灣大道一段1號' },
+  { id: 4, name: '台南車站', address: '台南市東區北門路二段4號' },
+  { id: 5, name: '高雄車站', address: '高雄市三民區建國二路318號' },
+];
 
 // Helper: 驗證行程資料完整性（狀態流轉前必須有車輛、領隊、站點等）
 function validateTripData(trip) {
@@ -60,6 +69,7 @@ const TripManagementPage = () => {
   const [loading, setLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
+  const [availableStations, setAvailableStations] = useState(DEFAULT_STATIONS);
 
   // 新增：多日行程欄位
   const [formData, setFormData] = useState({
@@ -501,25 +511,61 @@ const TripManagementPage = () => {
               {formData.tripType === 'one_way' && (
                 <div className="p-3 border rounded-lg mb-2 bg-gray-50">
                   <div className="mb-2 font-bold text-gray-800">單程</div>
-                  <Input placeholder="出發站" value={formData.segments[0]?.stations[0] || ''} onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }] }))} />
+                  <select 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    value={formData.segments[0]?.stations[0] || ''} 
+                    onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }] }))}
+                  >
+                    <option value="">請選擇出發站</option>
+                    {availableStations.map(station => (
+                      <option key={station.id} value={station.name}>{station.name}</option>
+                    ))}
+                  </select>
                 </div>
               )}
               {formData.tripType === 'round_trip' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-3 border rounded-lg mb-2 bg-gray-50">
                     <div className="mb-2 font-bold text-gray-800">去程</div>
-                    <Input placeholder="去程出發站" value={formData.segments[0]?.stations[0] || ''} onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }, f.segments[1] || {}] }))} />
+                    <select 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      value={formData.segments[0]?.stations[0] || ''} 
+                      onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }, f.segments[1] || {}] }))}
+                    >
+                      <option value="">請選擇去程出發站</option>
+                      {availableStations.map(station => (
+                        <option key={station.id} value={station.name}>{station.name}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="p-3 border rounded-lg mb-2 bg-gray-50">
                     <div className="mb-2 font-bold text-gray-800">回程</div>
-                    <Input placeholder="回程出發站" value={formData.segments[1]?.stations[0] || ''} onChange={e => setFormData(f => ({ ...f, segments: [f.segments[0] || {}, { ...f.segments[1], stations: [e.target.value] }] }))} />
+                    <select 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      value={formData.segments[1]?.stations[0] || ''} 
+                      onChange={e => setFormData(f => ({ ...f, segments: [f.segments[0] || {}, { ...f.segments[1], stations: [e.target.value] }] }))}
+                    >
+                      <option value="">請選擇回程出發站</option>
+                      {availableStations.map(station => (
+                        <option key={station.id} value={station.name}>{station.name}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               )}
               {formData.tripType === 'return_only' && (
                 <div className="p-3 border rounded-lg mb-2 bg-gray-50">
                   <div className="mb-2 font-bold text-gray-800">僅回程</div>
-                  <Input placeholder="回程出發站" value={formData.segments[0]?.stations[0] || ''} onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }] }))} />
+                  <select 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    value={formData.segments[0]?.stations[0] || ''} 
+                    onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }] }))}
+                  >
+                    <option value="">請選擇回程出發站</option>
+                    {availableStations.map(station => (
+                      <option key={station.id} value={station.name}>{station.name}</option>
+                    ))}
+                  </select>
                 </div>
               )}
             </div>
@@ -602,25 +648,61 @@ const TripManagementPage = () => {
               {formData.tripType === 'one_way' && (
                 <div className="p-3 border rounded-lg mb-2 bg-gray-50">
                   <div className="mb-2 font-bold text-gray-800">單程</div>
-                  <Input placeholder="出發站" value={formData.segments[0]?.stations[0] || ''} onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }] }))} />
+                  <select 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    value={formData.segments[0]?.stations[0] || ''} 
+                    onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }] }))}
+                  >
+                    <option value="">請選擇出發站</option>
+                    {availableStations.map(station => (
+                      <option key={station.id} value={station.name}>{station.name}</option>
+                    ))}
+                  </select>
                 </div>
               )}
               {formData.tripType === 'round_trip' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-3 border rounded-lg mb-2 bg-gray-50">
                     <div className="mb-2 font-bold text-gray-800">去程</div>
-                    <Input placeholder="去程出發站" value={formData.segments[0]?.stations[0] || ''} onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }, f.segments[1] || {}] }))} />
+                    <select 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      value={formData.segments[0]?.stations[0] || ''} 
+                      onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }, f.segments[1] || {}] }))}
+                    >
+                      <option value="">請選擇去程出發站</option>
+                      {availableStations.map(station => (
+                        <option key={station.id} value={station.name}>{station.name}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="p-3 border rounded-lg mb-2 bg-gray-50">
                     <div className="mb-2 font-bold text-gray-800">回程</div>
-                    <Input placeholder="回程出發站" value={formData.segments[1]?.stations[0] || ''} onChange={e => setFormData(f => ({ ...f, segments: [f.segments[0] || {}, { ...f.segments[1], stations: [e.target.value] }] }))} />
+                    <select 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      value={formData.segments[1]?.stations[0] || ''} 
+                      onChange={e => setFormData(f => ({ ...f, segments: [f.segments[0] || {}, { ...f.segments[1], stations: [e.target.value] }] }))}
+                    >
+                      <option value="">請選擇回程出發站</option>
+                      {availableStations.map(station => (
+                        <option key={station.id} value={station.name}>{station.name}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               )}
               {formData.tripType === 'return_only' && (
                 <div className="p-3 border rounded-lg mb-2 bg-gray-50">
                   <div className="mb-2 font-bold text-gray-800">僅回程</div>
-                  <Input placeholder="回程出發站" value={formData.segments[0]?.stations[0] || ''} onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }] }))} />
+                  <select 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    value={formData.segments[0]?.stations[0] || ''} 
+                    onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }] }))}
+                  >
+                    <option value="">請選擇回程出發站</option>
+                    {availableStations.map(station => (
+                      <option key={station.id} value={station.name}>{station.name}</option>
+                    ))}
+                  </select>
                 </div>
               )}
             </div>
