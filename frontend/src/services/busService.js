@@ -69,7 +69,28 @@ export const tripService = {
 
   // 建立新行程
   async createTrip(tripData) {
-    const response = await apiClient.post('/trip', tripData);
+    // 狀態 enum 對應
+    const statusMap = {
+      planning: 'Planning',
+      confirmed: 'Confirmed',
+      in_progress: 'InProgress',
+      completed: 'Completed',
+      cancelled: 'Cancelled'
+    };
+    const directionMap = {
+      round_trip: 'RoundTrip',
+      one_way: 'OneWay'
+    };
+    const payload = {
+      request: {
+        Name: tripData.tripName,
+        Date: tripData.startDate,
+        Description: tripData.description || '',
+        Status: statusMap[tripData.status] || 'Planning',
+        Direction: directionMap[tripData.direction] || 'RoundTrip'
+      }
+    };
+    const response = await apiClient.post('/trip', payload);
     return response.data;
   },
 };
