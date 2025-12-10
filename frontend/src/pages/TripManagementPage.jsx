@@ -90,6 +90,35 @@ const TripManagementPage = () => {
 
   // ...existing config arrays (tripTypes, boardingModes, segmentTypes, statusOptions, mockTrips)...
 
+  // 重置表單
+  const resetForm = () => {
+    setFormData({
+      tripName: '',
+      startDate: '',
+      endDate: '',
+      departureLocation: '',
+      destination: '',
+      estimatedPassengers: 40,
+      description: '',
+      contactPerson: '',
+      contactPhone: '',
+      status: 'draft',
+      tripType: 'round_trip',
+      boardingMode: 'assigned',
+      segments: [
+        {
+          id: 1,
+          type: 'outbound',
+          date: '',
+          time: '08:00',
+          stations: [],
+          estimatedDuration: '2',
+          notes: ''
+        }
+      ]
+    });
+  };
+
   useEffect(() => {
     let mounted = true;
     const load = async () => {
