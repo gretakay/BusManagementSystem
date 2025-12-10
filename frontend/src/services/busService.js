@@ -33,10 +33,20 @@ export const tripService = {
     // 更新行程
     async updateTrip(tripData) {
       // 只傳後端需要的欄位
+      // 狀態 enum 對應
+      const statusMap = {
+        planning: 'Planning',
+        confirmed: 'Confirmed',
+        in_progress: 'InProgress',
+        completed: 'Completed',
+        cancelled: 'Cancelled'
+      };
+      // 日期轉 Date 物件
+      const dateObj = tripData.startDate ? new Date(tripData.startDate) : new Date();
       const payload = {
         Name: tripData.tripName,
-        Date: tripData.startDate,
-        Status: tripData.status,
+        Date: dateObj,
+        Status: statusMap[tripData.status] || 'Planning',
         Description: tripData.description
       };
       const response = await apiClient.put(`/trip/${tripData.id}`, payload);
