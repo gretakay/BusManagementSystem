@@ -347,9 +347,79 @@ const TripManagementPage = () => {
           )}
           <div className="space-y-4">
             {pagedTrips.map((trip) => (
-              <div key={trip.id} className="p-4 border border-gray-200 rounded-lg">
-                <h3 className="text-lg font-bold text-gray-900">{trip.tripName}</h3>
-                {/* ...可擴充更多行程資訊... */}
+              <div key={trip.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <h3 className="text-lg font-bold text-gray-900">{trip.tripName}</h3>
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        trip.status === 'draft' || trip.status === 1 ? 'bg-gray-200 text-gray-700' :
+                        trip.status === 'open' || trip.status === 2 ? 'bg-green-200 text-green-700' :
+                        trip.status === 'closed' || trip.status === 3 ? 'bg-blue-200 text-blue-700' :
+                        trip.status === 'cancelled' || trip.status === 4 ? 'bg-red-200 text-red-700' :
+                        'bg-purple-200 text-purple-700'
+                      }`}>
+                        {trip.status === 'draft' || trip.status === 1 ? '草稿' :
+                         trip.status === 'open' || trip.status === 2 ? '開放' :
+                         trip.status === 'closed' || trip.status === 3 ? '已關閉' :
+                         trip.status === 'cancelled' || trip.status === 4 ? '已取消' : '已完成'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm text-gray-600 mb-2">
+                      <div>
+                        <span className="font-medium">日期：</span>
+                        {new Date(trip.startDate || trip.date).toLocaleDateString('zh-TW')}
+                      </div>
+                      <div>
+                        <span className="font-medium">出發地：</span>
+                        {trip.departureLocation || '未設定'}
+                      </div>
+                      <div>
+                        <span className="font-medium">目的地：</span>
+                        {trip.destination || '未設定'}
+                      </div>
+                      <div>
+                        <span className="font-medium">預估人數：</span>
+                        {trip.estimatedPassengers || trip.totalCapacity || 0} 人
+                      </div>
+                    </div>
+                    {trip.description && (
+                      <p className="text-sm text-gray-500 mt-2">{trip.description}</p>
+                    )}
+                  </div>
+                  <div className="flex space-x-2 ml-4">
+                    <Button 
+                      onClick={() => navigate(`/trips/${trip.id}`)} 
+                      variant="outline" 
+                      size="sm"
+                      className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                    >
+                      詳情
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        setEditingTrip(trip);
+                        setShowEditModal(true);
+                      }} 
+                      variant="outline" 
+                      size="sm"
+                      className="text-green-600 border-green-600 hover:bg-green-50"
+                    >
+                      編輯
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        setDeletingTrip(trip);
+                        setShowDeleteModal(true);
+                      }} 
+                      variant="outline" 
+                      size="sm"
+                      className="text-red-600 border-red-600 hover:bg-red-50"
+                    >
+                      刪除
+                    </Button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
