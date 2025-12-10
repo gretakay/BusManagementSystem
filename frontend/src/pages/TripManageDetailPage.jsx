@@ -11,23 +11,33 @@ const TripManageDetailPage = () => {
   const navigate = useNavigate();
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview'); // overview, vehicles, leaders, stations, people
+  const [activeTab, setActiveTab] = useState('overview');
   const [buses, setBuses] = useState([]);
   const [people, setPeople] = useState([]);
+  const [availableLeaders, setAvailableLeaders] = useState([]);
   const [showAddBusModal, setShowAddBusModal] = useState(false);
-  const [showAddPersonModal, setShowAddPersonModal] = useState(false);
+  const [showEditBusModal, setShowEditBusModal] = useState(false);
+  const [showAssignLeaderModal, setShowAssignLeaderModal] = useState(false);
+  const [showAssignPeopleModal, setShowAssignPeopleModal] = useState(false);
+  const [selectedBus, setSelectedBus] = useState(null);
   const [busFormData, setBusFormData] = useState({
     plateNumber: '',
-    capacity: '',
+    capacity: 42,
     driverName: '',
     driverPhone: '',
-    company: ''
+    company: '',
+    description: ''
+  });
+  const [assignmentData, setAssignmentData] = useState({
+    busId: null,
+    selectedPeople: []
   });
 
   useEffect(() => {
     loadTripData();
     loadBuses();
     loadPeople();
+    loadAvailableLeaders();
   }, [id]);
 
   const loadTripData = async () => {
@@ -39,16 +49,16 @@ const TripManageDetailPage = () => {
         tripName: data.name || data.Name,
         startDate: data.startDate || data.StartDate,
         endDate: data.endDate || data.EndDate,
-        departureLocation: data.departureLocation || data.DepartureLocation,
-        destination: data.destination || data.Destination,
-        estimatedPassengers: data.estimatedPassengers || data.EstimatedPassengers,
-        actualPassengers: data.actualPassengers || data.ActualPassengers,
-        description: data.description || data.Description,
-        contactPerson: data.contactPerson || data.ContactPerson,
-        contactPhone: data.contactPhone || data.ContactPhone,
+        departureLocation: data.departureLocation || data.DepartureLocation || '未設定',
+        destination: data.destination || data.Destination || '未設定',
+        estimatedPassengers: data.estimatedPassengers || data.EstimatedPassengers || 0,
+        actualPassengers: data.actualPassengers || data.ActualPassengers || 0,
+        description: data.description || data.Description || '',
+        contactPerson: data.contactPerson || data.ContactPerson || '',
+        contactPhone: data.contactPhone || data.ContactPhone || '',
         status: (data.status || data.Status || '').toLowerCase(),
-        tripType: data.tripType || data.TripType,
-        boardingMode: data.boardingMode || data.BoardingMode,
+        tripType: data.tripType || data.TripType || '未定義',
+        boardingMode: data.boardingMode || data.BoardingMode || 'assigned',
         segments: (data.segments || data.Segments || []).map(seg => ({
           id: seg.id || seg.Id,
           type: seg.type || seg.Type,
@@ -82,7 +92,7 @@ const TripManageDetailPage = () => {
 
   const loadBuses = async () => {
     try {
-      const data = await busService.getBuses();
+      const data = await busService.getBuses(id);
       setBuses(data || []);
     } catch (err) {
       console.error('載入車輛失敗', err);
@@ -100,18 +110,101 @@ const TripManageDetailPage = () => {
     }
   };
 
+  const loadAvailableLeaders = async () => {
+    try {
+      // 模擬資料，實際應從API取得
+      setAvailableLeaders([
+        { id: 'leader1', name: '王領隊', phone: '0912-345-678' },
+        { id: 'leader2', name: '李領隊', phone: '0923-456-789' },
+        { id: 'leader3', name: '陳領隊', phone: '0934-567-890' }
+      ]);
+    } catch (err) {
+      console.error('載入領隊失敗', err);
+    }
+  };
+
   const handleAddBus = async (e) => {
     e.preventDefault();
     try {
-      await busService.assignBus(id, busFormData);
+      await busService.createBus({
+        tripId: id,
+        name: busFormData.plateNumber,
+        capacity: parseInt(busFormData.capacity),
+        description: busFormData.description
+      });
       setShowAddBusModal(false);
-      setBusFormData({ plateNumber: '', capacity: '', driverName: '', driverPhone: '', company: '' });
+      setBusFormData({ plateNumber: '', capacity: 42, driverName: '', driverPhone: '', company: '', description: '' });
       loadBuses();
       loadTripData();
       alert('✅ 車輛已新增成功！');
     } catch (err) {
       alert('❌ 新增車輛失敗：' + (err.message || '請稍後再試'));
     }
+  };
+
+  const handleEditBus = async (e) => {
+    e.preventDefault();
+    try {
+      await busService.updateBus(selectedBus.id, {
+        name: busFormData.plateNumber,
+        capacity: parseInt(busFormData.capacity),
+        description: busFormData.description
+      });
+      setShowEditBusModal(false);
+      setSelectedBus(null);
+      setBusFormData({ plateNumber: '', capacity: 42, driverName: '', driverPhone: '', company: '', description: '' });
+      loadBuses();
+      alert('✅ 車輛已更新成功！');
+    } catch (err) {
+      alert('❌ 更新車輛失敗：' + (err.message || '請稍後再試'));
+    }
+  };
+
+  const handleDeleteBus = async (busId) => {
+    if (!confirm('確定要刪除此車輛嗎？此操作無法復原。')) return;
+    try {
+      await busService.deleteBus(busId);
+      loadBuses();
+      loadTripData();
+      alert('✅ 車輛已刪除成功！');
+    } catch (err) {
+      alert('❌ 刪除車輛失敗：' + (err.message || '該車輛可能已有人員分配'));
+    }
+  };
+
+  const handleAssignLeader = async (e) => {
+    e.preventDefault();
+    // TODO: 實作領隊指派邏輯
+    alert('領隊指派功能開發中');
+    setShowAssignLeaderModal(false);
+  };
+
+  const handleAssignPeople = async (e) => {
+    e.preventDefault();
+    // TODO: 實作人員分配邏輯
+    alert('人員分配功能開發中');
+    setShowAssignPeopleModal(false);
+  };
+
+  const openEditBusModal = (bus) => {
+    setSelectedBus(bus);
+    setBusFormData({
+      plateNumber: bus.name,
+      capacity: bus.capacity,
+      description: bus.description || ''
+    });
+    setShowEditBusModal(true);
+  };
+
+  const openAssignLeaderModal = (bus) => {
+    setSelectedBus(bus);
+    setShowAssignLeaderModal(true);
+  };
+
+  const openAssignPeopleModal = (bus) => {
+    setSelectedBus(bus);
+    setAssignmentData({ busId: bus.id, selectedPeople: [] });
+    setShowAssignPeopleModal(true);
   };
 
   const statusColors = {
@@ -134,8 +227,8 @@ const TripManageDetailPage = () => {
     { id: 'overview', name: '總覽', icon: '📋' },
     { id: 'vehicles', name: '車輛管理', icon: '🚌' },
     { id: 'leaders', name: '領隊指派', icon: '👨‍✈️' },
-    { id: 'stations', name: '站點管理', icon: '📍' },
-    { id: 'people', name: '人員名單', icon: '👥' }
+    { id: 'people', name: '乘客管理', icon: '👥' },
+    { id: 'stations', name: '站點設定', icon: '📍' }
   ];
 
   if (loading) {
@@ -236,7 +329,7 @@ const TripManageDetailPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 mb-1">車輛數</p>
-                <p className="text-2xl font-bold text-blue-600">{trip.buses?.length || 0}</p>
+                <p className="text-2xl font-bold text-blue-600">{buses.length || 0}</p>
               </div>
               <div className="bg-blue-100 p-3 rounded-lg">
                 <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -346,32 +439,54 @@ const TripManageDetailPage = () => {
                     新增車輛
                   </Button>
                 </div>
-                {trip.buses && trip.buses.length > 0 ? (
+                {buses && buses.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {trip.buses.map(bus => (
+                    {buses.map(bus => (
                       <div key={bus.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                         <div className="flex items-start justify-between mb-3">
                           <div>
                             <h4 className="font-semibold text-gray-900">{bus.name}</h4>
-                            <p className="text-sm text-gray-600">車牌：{bus.plateNumber || '未設定'}</p>
+                            <p className="text-sm text-gray-600">車輛編號：{bus.id}</p>
                           </div>
                           <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
                             {bus.capacity} 人座
                           </span>
                         </div>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">司機：</span>
-                            <span className="font-medium">{bus.driverName || '未指派'}</span>
-                          </div>
+                        <div className="space-y-2 text-sm mb-4">
                           <div className="flex justify-between">
                             <span className="text-gray-600">領隊：</span>
                             <span className="font-medium">{bus.leaderName || '未指派'}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">已分配/已上車：</span>
-                            <span className="font-medium">{bus.assignedCount || 0} / {bus.onBoardCount || 0}</span>
+                            <span className="text-gray-600">備註：</span>
+                            <span className="font-medium text-gray-500 text-xs">{bus.description || '-'}</span>
                           </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button 
+                            onClick={() => openEditBusModal(bus)} 
+                            className="flex-1 bg-blue-50 text-blue-600 hover:bg-blue-100 text-sm"
+                          >
+                            編輯
+                          </Button>
+                          <Button 
+                            onClick={() => openAssignLeaderModal(bus)} 
+                            className="flex-1 bg-green-50 text-green-600 hover:bg-green-100 text-sm"
+                          >
+                            指派領隊
+                          </Button>
+                          <Button 
+                            onClick={() => openAssignPeopleModal(bus)} 
+                            className="flex-1 bg-purple-50 text-purple-600 hover:bg-purple-100 text-sm"
+                          >
+                            分配乘客
+                          </Button>
+                          <Button 
+                            onClick={() => handleDeleteBus(bus.id)} 
+                            className="bg-red-50 text-red-600 hover:bg-red-100 text-sm"
+                          >
+                            刪除
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -392,19 +507,75 @@ const TripManageDetailPage = () => {
 
             {/* 領隊指派標籤 */}
             {activeTab === 'leaders' && (
-              <div className="text-center py-12 text-gray-500">
-                <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <p className="mb-2">領隊指派功能</p>
-                <p className="text-sm">請前往「領隊指派」頁面進行詳細管理</p>
-                <Button onClick={() => navigate('/leader-assignments')} className="mt-4 bg-indigo-600 text-white">
-                  前往領隊指派
-                </Button>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">車輛領隊指派</h3>
+                <p className="text-gray-600 mb-6">為每台車輛指派負責的領隊</p>
+                {buses && buses.length > 0 ? (
+                  <div className="space-y-4">
+                    {buses.map(bus => (
+                      <div key={bus.id} className="border border-gray-200 rounded-lg p-4 flex items-center justify-between">
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{bus.name}</h4>
+                          <p className="text-sm text-gray-600">
+                            目前領隊：{bus.leaderName ? <span className="text-green-600 font-medium">{bus.leaderName}</span> : <span className="text-gray-400">未指派</span>}
+                          </p>
+                        </div>
+                        <Button 
+                          onClick={() => openAssignLeaderModal(bus)} 
+                          className="bg-indigo-600 text-white"
+                        >
+                          {bus.leaderName ? '更換領隊' : '指派領隊'}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-gray-500">
+                    <p>請先新增車輛再進行領隊指派</p>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* 站點管理標籤 */}
+            {/* 乘客管理標籤 */}
+            {activeTab === 'people' && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">乘客車輛分配</h3>
+                <p className="text-gray-600 mb-6">將報名人員分配到各車輛</p>
+                {buses && buses.length > 0 ? (
+                  <div className="space-y-4">
+                    {buses.map(bus => (
+                      <div key={bus.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <h4 className="font-semibold text-gray-900">{bus.name}</h4>
+                            <p className="text-sm text-gray-600">
+                              座位：{bus.assignedCount || 0} / {bus.capacity}
+                              <span className={`ml-2 ${(bus.assignedCount || 0) > bus.capacity ? 'text-red-600' : 'text-green-600'}`}>
+                                {(bus.assignedCount || 0) > bus.capacity ? '⚠️ 超載' : '✓ 正常'}
+                              </span>
+                            </p>
+                          </div>
+                          <Button 
+                            onClick={() => openAssignPeopleModal(bus)} 
+                            className="bg-indigo-600 text-white"
+                          >
+                            分配乘客
+                          </Button>
+                        </div>
+                        {/* 這裡可以顯示已分配的乘客列表 */}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-gray-500">
+                    <p>請先新增車輛再進行乘客分配</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 站點設定標籤 */}
             {activeTab === 'stations' && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">行程段次與站點</h3>
@@ -442,57 +613,9 @@ const TripManageDetailPage = () => {
                 ) : (
                   <div className="text-center py-12 text-gray-500">
                     <p>尚未設定段次與站點</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* 人員名單標籤 */}
-            {activeTab === 'people' && (
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">報名人員名單</h3>
-                  <Button onClick={() => navigate('/people')} className="bg-indigo-600 text-white">
-                    前往人員管理
-                  </Button>
-                </div>
-                {people.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">姓名</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">法名</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">精舍別</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">聯絡電話</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">狀態</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {people.map(person => (
-                          <tr key={person.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{person.name}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{person.dharmaName || '-'}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{person.monastery || '-'}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{person.phone || '-'}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                person.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                              }`}>
-                                {person.status === 'confirmed' ? '已確認' : '待確認'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-gray-500">
-                    <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                    <p>尚無報名人員</p>
+                    <Button onClick={() => navigate(`/trips/${id}/edit`)} className="mt-4 bg-indigo-600 text-white">
+                      前往行程編輯
+                    </Button>
                   </div>
                 )}
               </div>
@@ -519,22 +642,10 @@ const TripManageDetailPage = () => {
               required
             />
             <Input
-              label="司機姓名"
-              value={busFormData.driverName}
-              onChange={(e) => setBusFormData(f => ({ ...f, driverName: e.target.value }))}
-              placeholder="例：王大明"
-            />
-            <Input
-              label="司機電話"
-              value={busFormData.driverPhone}
-              onChange={(e) => setBusFormData(f => ({ ...f, driverPhone: e.target.value }))}
-              placeholder="例：0912-345-678"
-            />
-            <Input
-              label="車行公司"
-              value={busFormData.company}
-              onChange={(e) => setBusFormData(f => ({ ...f, company: e.target.value }))}
-              placeholder="例：快樂遊覽車公司"
+              label="備註"
+              value={busFormData.description}
+              onChange={(e) => setBusFormData(f => ({ ...f, description: e.target.value }))}
+              placeholder="例：大型遊覽車，靠窗座位較多"
             />
             <div className="flex justify-end space-x-2 mt-6">
               <Button type="button" onClick={() => setShowAddBusModal(false)} variant="outline">
@@ -542,6 +653,116 @@ const TripManageDetailPage = () => {
               </Button>
               <Button type="submit" className="bg-indigo-600 text-white">
                 新增
+              </Button>
+            </div>
+          </form>
+        </Modal>
+
+        {/* 編輯車輛 Modal */}
+        <Modal open={showEditBusModal} onClose={() => setShowEditBusModal(false)} title="編輯車輛">
+          <form onSubmit={handleEditBus} className="p-4 space-y-4">
+            <Input
+              label="車牌號碼 *"
+              value={busFormData.plateNumber}
+              onChange={(e) => setBusFormData(f => ({ ...f, plateNumber: e.target.value }))}
+              placeholder="例：ABC-1234"
+              required
+            />
+            <Input
+              label="座位數 *"
+              type="number"
+              value={busFormData.capacity}
+              onChange={(e) => setBusFormData(f => ({ ...f, capacity: e.target.value }))}
+              placeholder="例：45"
+              required
+            />
+            <Input
+              label="備註"
+              value={busFormData.description}
+              onChange={(e) => setBusFormData(f => ({ ...f, description: e.target.value }))}
+              placeholder="例：大型遊覽車，靠窗座位較多"
+            />
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button type="button" onClick={() => setShowEditBusModal(false)} variant="outline">
+                取消
+              </Button>
+              <Button type="submit" className="bg-indigo-600 text-white">
+                更新
+              </Button>
+            </div>
+          </form>
+        </Modal>
+
+        {/* 指派領隊 Modal */}
+        <Modal open={showAssignLeaderModal} onClose={() => setShowAssignLeaderModal(false)} title="指派領隊">
+          <form onSubmit={handleAssignLeader} className="p-4 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                選擇領隊 *
+              </label>
+              <select className="w-full border border-gray-300 rounded-lg px-3 py-2" required>
+                <option value="">請選擇...</option>
+                {availableLeaders.map(leader => (
+                  <option key={leader.id} value={leader.id}>
+                    {leader.name} ({leader.phone})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button type="button" onClick={() => setShowAssignLeaderModal(false)} variant="outline">
+                取消
+              </Button>
+              <Button type="submit" className="bg-indigo-600 text-white">
+                指派
+              </Button>
+            </div>
+          </form>
+        </Modal>
+
+        {/* 分配乘客 Modal */}
+        <Modal open={showAssignPeopleModal} onClose={() => setShowAssignPeopleModal(false)} title="分配乘客">
+          <form onSubmit={handleAssignPeople} className="p-4 space-y-4">
+            <div>
+              <p className="text-sm text-gray-600 mb-3">
+                車輛：<span className="font-semibold text-gray-900">{selectedBus?.name}</span>
+                <span className="ml-2 text-gray-500">（{selectedBus?.capacity} 人座）</span>
+              </p>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                選擇乘客
+              </label>
+              <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-2 space-y-2">
+                {people.length > 0 ? (
+                  people.map(person => (
+                    <label key={person.id} className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="rounded text-indigo-600"
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setAssignmentData(d => ({ ...d, selectedPeople: [...d.selectedPeople, person.id] }));
+                          } else {
+                            setAssignmentData(d => ({ ...d, selectedPeople: d.selectedPeople.filter(id => id !== person.id) }));
+                          }
+                        }}
+                      />
+                      <span className="text-sm">{person.name} - {person.dharmaName || '無法名'}</span>
+                    </label>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500 text-center py-4">無可分配人員</p>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                已選擇 {assignmentData.selectedPeople.length} 人
+              </p>
+            </div>
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button type="button" onClick={() => setShowAssignPeopleModal(false)} variant="outline">
+                取消
+              </Button>
+              <Button type="submit" className="bg-indigo-600 text-white">
+                分配
               </Button>
             </div>
           </form>
