@@ -44,10 +44,12 @@ export const tripService = {
       // 日期轉 Date 物件
       const dateObj = tripData.startDate ? new Date(tripData.startDate) : new Date();
       const payload = {
-        Name: tripData.tripName,
-        Date: dateObj,
-        Status: statusMap[tripData.status] || 'Planning',
-        Description: tripData.description
+        request: {
+          Name: tripData.tripName,
+          Date: dateObj,
+          Status: statusMap[tripData.status] || 'Planning',
+          Description: tripData.description
+        }
       };
       const response = await apiClient.put(`/trip/${tripData.id}`, payload);
       return response.data;
