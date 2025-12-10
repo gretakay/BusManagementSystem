@@ -4,12 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using BusManagementSystem.Data;
 using BusManagementSystem.DTOs;
 using BusManagementSystem.Models;
+using System.Globalization;
 
 namespace BusManagementSystem.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    // backward-compatible plural route for published older frontends that call /api/trips
     [Route("api/trips")]
     [Authorize]
     public class TripController : ControllerBase
@@ -21,6 +21,30 @@ namespace BusManagementSystem.Controllers
         {
             _context = context;
             _logger = logger;
+        }
+
+        // Helper: 檢查行程是否有時間衝突（同車輛/領隊/乘客重疊）
+        // 解決：行程重疊風險
+        private async Task<bool> HasTripConflict(DateTime date, int? busId = null, int? leaderId = null, int? personId = null, int? excludeTripId = null)
+        {
+            var query = _context.Trips.AsQueryable();
+
+            // 只檢查同一天的行程（如有多日行程，應改為日期區間）
+            query = query.Where(t => t.Date.Date == date.Date);
+
+            if (excludeTripId.HasValue)
+                query = query.Where(t => t.Id != excludeTripId.Value);
+
+            if (busId.HasValue)
+                query = query.Where(t => t.Buses.Any(b => b.Id == busId.Value));
+
+            if (leaderId.HasValue)
+                query = query.Where(t => t.Buses.Any(b => b.LeaderUserId == leaderId.Value));
+
+            if (personId.HasValue)
+                query = query.Where(t => t.Assignments.Any(a => a.PersonId == personId.Value));
+
+            return await query.AnyAsync();
         }
 
         [HttpGet]
@@ -138,10 +162,19 @@ namespace BusManagementSystem.Controllers
         {
             try
             {
+                // 新增：時區統一處理，所有時間皆用 UTC
+                var tripDate = request.Date.Kind == DateTimeKind.Utc ? request.Date : request.Date.ToUniversalTime();
+
+                // 新增：行程衝突檢查（同一天同車輛/領隊/乘客不可重複）
+                if (await HasTripConflict(tripDate))
+                {
+                    return BadRequest(new { message = "Trip conflict detected: same date and resource already scheduled." });
+                }
+
                 var trip = new Trip
                 {
                     Name = request.Name,
-                    Date = request.Date,
+                    Date = tripDate,
                     Direction = request.Direction,
                     Description = request.Description,
                     Status = TripStatus.Draft
@@ -186,8 +219,17 @@ namespace BusManagementSystem.Controllers
                     return NotFound();
                 }
 
+                // 新增：時區統一處理
+                var tripDate = request.Date.Kind == DateTimeKind.Utc ? request.Date : request.Date.ToUniversalTime();
+
+                // 新增：行程衝突檢查（排除自己）
+                if (await HasTripConflict(tripDate, excludeTripId: id))
+                {
+                    return BadRequest(new { message = "Trip conflict detected: same date and resource already scheduled." });
+                }
+
                 trip.Name = request.Name;
-                trip.Date = request.Date;
+                trip.Date = tripDate;
                 trip.Status = request.Status;
                 trip.Description = request.Description;
                 trip.UpdatedAt = DateTime.UtcNow;
@@ -227,6 +269,9 @@ namespace BusManagementSystem.Controllers
                     return BadRequest(new { message = "Cannot delete trip with boarding records" });
                 }
 
+                // 新增：同步清理分配資料，避免殘留孤兒資料
+                _context.Assignments.RemoveRange(trip.Assignments);
+
                 _context.Trips.Remove(trip);
                 await _context.SaveChangesAsync();
 
@@ -250,6 +295,13 @@ namespace BusManagementSystem.Controllers
                 if (trip == null)
                 {
                     return NotFound();
+                }
+
+                // 新增：狀態流轉前檢查資料完整性（如必須有車輛/領隊/站點）
+                var hasBus = await _context.Buses.AnyAsync(b => b.TripId == id);
+                if (!hasBus)
+                {
+                    return BadRequest(new { message = "Cannot open trip without assigned bus." });
                 }
 
                 trip.Status = TripStatus.Open;
