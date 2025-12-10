@@ -111,21 +111,21 @@ export const tripService = {
     const endDateUtc = toUtcDate(tripData.endDate);
     const payload = {
       request: {
-        Name: tripData.tripName,
-        Date: startDateUtc,
+        Name: tripData.tripName || "新行程", // 預設不為空
+        Date: startDateUtc || new Date().toISOString(),
         Description: tripData.description || '',
         Direction: directionMap[tripData.direction?.toLowerCase()] || directionMap.outbound,
         Status: statusMap[tripData.status?.toLowerCase()] || statusMap.draft,
-        StartDate: startDateUtc,
-        EndDate: endDateUtc,
-        DepartureLocation: tripData.departureLocation,
-        Destination: tripData.destination,
-        EstimatedPassengers: tripData.estimatedPassengers,
-        ContactPerson: tripData.contactPerson,
-        ContactPhone: tripData.contactPhone,
-        TripType: tripData.tripType,
-        BoardingMode: tripData.boardingMode,
-        Segments: tripData.segments
+        StartDate: startDateUtc || new Date().toISOString(),
+        EndDate: endDateUtc || new Date().toISOString(),
+        DepartureLocation: tripData.departureLocation || '',
+        Destination: tripData.destination || '',
+        EstimatedPassengers: tripData.estimatedPassengers || 0,
+        ContactPerson: tripData.contactPerson || '',
+        ContactPhone: tripData.contactPhone || '',
+        TripType: tripData.tripType || 'one_way',
+        BoardingMode: tripData.boardingMode || 'assigned',
+        Segments: tripData.segments || []
       }
     };
     try {
