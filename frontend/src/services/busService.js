@@ -82,13 +82,11 @@ export const tripService = {
       one_way: 'OneWay'
     };
     const payload = {
-      request: {
-        Name: tripData.tripName,
-        Date: tripData.startDate,
-        Description: tripData.description || '',
-        Status: statusMap[tripData.status] || 'Planning',
-        Direction: directionMap[tripData.direction] || 'RoundTrip'
-      }
+      Name: tripData.tripName,
+      Date: tripData.startDate,
+      Description: tripData.description || '',
+      Status: statusMap[tripData.status] || 'Planning',
+      Direction: directionMap[tripData.direction] || 'RoundTrip'
     };
     const response = await apiClient.post('/trip', payload);
     return response.data;
