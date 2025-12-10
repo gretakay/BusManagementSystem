@@ -218,6 +218,28 @@ const TripManagementPage = () => {
           </div>
         </div>
 
+        {/* 新增行程 Modal 或表單 */}
+        {showCreateForm && (
+          <Modal onClose={() => setShowCreateForm(false)}>
+            <form onSubmit={handleCreateTrip} className="space-y-4 p-6">
+              <h2 className="text-xl font-bold mb-4">新增行程</h2>
+              <Input label="行程名稱" value={formData.tripName} onChange={e => setFormData(f => ({ ...f, tripName: e.target.value }))} required />
+              <Input label="出發日期" type="date" value={formData.startDate} onChange={e => setFormData(f => ({ ...f, startDate: e.target.value }))} required />
+              <Input label="結束日期" type="date" value={formData.endDate} onChange={e => setFormData(f => ({ ...f, endDate: e.target.value }))} required />
+              <Input label="出發地點" value={formData.departureLocation} onChange={e => setFormData(f => ({ ...f, departureLocation: e.target.value }))} required />
+              <Input label="目的地" value={formData.destination} onChange={e => setFormData(f => ({ ...f, destination: e.target.value }))} required />
+              <Input label="預估人數" type="number" value={formData.estimatedPassengers} onChange={e => setFormData(f => ({ ...f, estimatedPassengers: e.target.value }))} required />
+              <Input label="聯絡人" value={formData.contactPerson} onChange={e => setFormData(f => ({ ...f, contactPerson: e.target.value }))} />
+              <Input label="聯絡電話" value={formData.contactPhone} onChange={e => setFormData(f => ({ ...f, contactPhone: e.target.value }))} />
+              <Input label="備註" value={formData.description} onChange={e => setFormData(f => ({ ...f, description: e.target.value }))} />
+              <div className="flex justify-end space-x-2 mt-6">
+                <Button type="button" onClick={() => setShowCreateForm(false)} className="bg-gray-300">取消</Button>
+                <Button type="submit" className="bg-blue-600 text-white">建立</Button>
+              </div>
+            </form>
+          </Modal>
+        )}
+
         {/* 行程列表 */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <h2 className="text-xl font-bold text-gray-900 mb-4">行程列表</h2>
