@@ -1023,10 +1023,33 @@ const TripManagementPage = () => {
                         <Modal open={showEditModal} onClose={() => setShowEditModal(false)} title="編輯行程">
                           {editingTrip && (
                             <form
-                              onSubmit={e => {
+                              onSubmit={async e => {
                                 e.preventDefault();
-                                // TODO: 呼叫 API 更新行程
-                                setShowEditModal(false);
+                                try {
+                                  // 呼叫 API 更新行程
+                                  const payload = {
+                                    id: editingTrip.id,
+                                    tripName: editingTrip.tripName,
+                                    startDate: editingTrip.startDate,
+                                    endDate: editingTrip.endDate,
+                                    departureLocation: editingTrip.departureLocation,
+                                    destination: editingTrip.destination,
+                                    estimatedPassengers: editingTrip.estimatedPassengers,
+                                    description: editingTrip.description,
+                                    contactPerson: editingTrip.contactPerson,
+                                    contactPhone: editingTrip.contactPhone,
+                                    status: editingTrip.status,
+                                    tripType: editingTrip.tripType,
+                                    boardingMode: editingTrip.boardingMode,
+                                    segments: editingTrip.segments
+                                  };
+                                  await tripService.updateTrip(payload);
+                                  // 更新 trips 狀態
+                                  setTrips(prev => prev.map(t => t.id === editingTrip.id ? { ...editingTrip } : t));
+                                  setShowEditModal(false);
+                                } catch (err) {
+                                  alert('更新失敗，請稍後再試');
+                                }
                               }}
                               className="space-y-4"
                             >
