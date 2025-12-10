@@ -203,6 +203,11 @@ const TripManagementPage = () => {
   }
 
   // ...existing return JSX (表單、列表、分頁、詳細展開、Modal等)...
+  // 在行程列表 render 區塊加上：
+  // {/* 無資料提示，避免空白畫面 */}
+  // {!loading && pagedTrips.length === 0 && (
+  //   <div className="text-center text-gray-500 py-12">目前尚無行程，請點右上「新增行程」建立。</div>
+  // )}
 
 };
 
