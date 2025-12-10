@@ -61,7 +61,7 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   return (
-    <Router basename="/BusManagementSystem">
+    <Router>
       <Routes>
         {/* 登入頁面 */}
         <Route path="/login" element={<LoginPage />} />
