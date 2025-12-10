@@ -1000,18 +1000,15 @@ const TripManagementPage = () => {
                     </div>
                     
                     <div className="flex items-center space-x-2 ml-4">
-                      <Button variant="outline" size="sm">
-                          編輯
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditingTrip(trip);
-                            setShowEditModal(true);
-                          }}
-                        >
-                          編輯
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingTrip(trip);
+                          setShowEditModal(true);
+                        }}
+                      >
+                        編輯
                       </Button>
                       {trip.status === 'planning' && (
                         <Button size="sm" className="bg-green-600 hover:bg-green-700">
@@ -1019,57 +1016,57 @@ const TripManagementPage = () => {
                         </Button>
                       )}
                       {trip.status === 'confirmed' && (
-                          <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => alert('管理行程功能待開發')}>管理行程</Button>
-                            {/* 編輯行程彈窗 */}
-                            <Modal open={showEditModal} onClose={() => setShowEditModal(false)} title="編輯行程">
-                              {editingTrip && (
-                                <form
-                                  onSubmit={e => {
-                                    e.preventDefault();
-                                    // TODO: 呼叫 API 更新行程
-                                    setShowEditModal(false);
-                                  }}
-                                  className="space-y-4"
-                                >
-                                  <div>
-                                    <label className="block text-sm font-medium mb-1">行程名稱</label>
-                                    <input className="w-full border rounded px-3 py-2" value={editingTrip.tripName} onChange={e => setEditingTrip({ ...editingTrip, tripName: e.target.value })} />
-                                  </div>
-                                  <div className="flex space-x-2">
-                                    <div className="flex-1">
-                                      <label className="block text-sm font-medium mb-1">開始日期</label>
-                                      <input type="date" className="w-full border rounded px-3 py-2" value={editingTrip.startDate} onChange={e => setEditingTrip({ ...editingTrip, startDate: e.target.value })} />
-                                    </div>
-                                    <div className="flex-1">
-                                      <label className="block text-sm font-medium mb-1">結束日期</label>
-                                      <input type="date" className="w-full border rounded px-3 py-2" value={editingTrip.endDate} onChange={e => setEditingTrip({ ...editingTrip, endDate: e.target.value })} />
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-medium mb-1">出發地</label>
-                                    <input className="w-full border rounded px-3 py-2" value={editingTrip.departureLocation} onChange={e => setEditingTrip({ ...editingTrip, departureLocation: e.target.value })} />
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-medium mb-1">目的地</label>
-                                    <input className="w-full border rounded px-3 py-2" value={editingTrip.destination} onChange={e => setEditingTrip({ ...editingTrip, destination: e.target.value })} />
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-medium mb-1">預估人數</label>
-                                    <input type="number" className="w-full border rounded px-3 py-2" value={editingTrip.estimatedPassengers} onChange={e => setEditingTrip({ ...editingTrip, estimatedPassengers: e.target.value })} />
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-medium mb-1">描述</label>
-                                    <textarea className="w-full border rounded px-3 py-2" value={editingTrip.description} onChange={e => setEditingTrip({ ...editingTrip, description: e.target.value })} />
-                                  </div>
-                                  <div className="flex justify-end space-x-2">
-                                    <Button variant="outline" onClick={() => setShowEditModal(false)}>取消</Button>
-                                    <Button type="submit">儲存</Button>
-                                  </div>
-                                </form>
-                              )}
-                            </Modal>
+                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => alert('管理行程功能待開發')}>管理行程</Button>
                       )}
                     </div>
+                        {/* 編輯行程彈窗，放在最外層 */}
+                        <Modal open={showEditModal} onClose={() => setShowEditModal(false)} title="編輯行程">
+                          {editingTrip && (
+                            <form
+                              onSubmit={e => {
+                                e.preventDefault();
+                                // TODO: 呼叫 API 更新行程
+                                setShowEditModal(false);
+                              }}
+                              className="space-y-4"
+                            >
+                              <div>
+                                <label className="block text-sm font-medium mb-1">行程名稱</label>
+                                <input className="w-full border rounded px-3 py-2" value={editingTrip.tripName} onChange={e => setEditingTrip({ ...editingTrip, tripName: e.target.value })} />
+                              </div>
+                              <div className="flex space-x-2">
+                                <div className="flex-1">
+                                  <label className="block text-sm font-medium mb-1">開始日期</label>
+                                  <input type="date" className="w-full border rounded px-3 py-2" value={editingTrip.startDate} onChange={e => setEditingTrip({ ...editingTrip, startDate: e.target.value })} />
+                                </div>
+                                <div className="flex-1">
+                                  <label className="block text-sm font-medium mb-1">結束日期</label>
+                                  <input type="date" className="w-full border rounded px-3 py-2" value={editingTrip.endDate} onChange={e => setEditingTrip({ ...editingTrip, endDate: e.target.value })} />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">出發地</label>
+                                <input className="w-full border rounded px-3 py-2" value={editingTrip.departureLocation} onChange={e => setEditingTrip({ ...editingTrip, departureLocation: e.target.value })} />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">目的地</label>
+                                <input className="w-full border rounded px-3 py-2" value={editingTrip.destination} onChange={e => setEditingTrip({ ...editingTrip, destination: e.target.value })} />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">預估人數</label>
+                                <input type="number" className="w-full border rounded px-3 py-2" value={editingTrip.estimatedPassengers} onChange={e => setEditingTrip({ ...editingTrip, estimatedPassengers: e.target.value })} />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">描述</label>
+                                <textarea className="w-full border rounded px-3 py-2" value={editingTrip.description} onChange={e => setEditingTrip({ ...editingTrip, description: e.target.value })} />
+                              </div>
+                              <div className="flex justify-end space-x-2">
+                                <Button variant="outline" onClick={() => setShowEditModal(false)}>取消</Button>
+                                <Button type="submit">儲存</Button>
+                              </div>
+                            </form>
+                          )}
+                        </Modal>
                   </div>
 
                   {/* 展開的詳細資訊 */}
