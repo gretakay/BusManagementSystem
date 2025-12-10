@@ -130,7 +130,16 @@ const TripManagementPage = () => {
           type: 'outbound',
           date: '',
           time: '08:00',
-          stations: [],
+          stations: [''],
+          estimatedDuration: '2',
+          notes: ''
+        },
+        {
+          id: 2,
+          type: 'return',
+          date: '',
+          time: '17:00',
+          stations: [''],
           estimatedDuration: '2',
           notes: ''
         }
@@ -140,7 +149,9 @@ const TripManagementPage = () => {
 
   useEffect(() => {
     let mounted = true;
-    const load = async () => {
+    
+    // 載入行程列表
+    const loadTrips = async () => {
       setLoading(true);
       try {
         const data = await tripService.getTrips();
@@ -170,9 +181,50 @@ const TripManagementPage = () => {
         setLoading(false);
       }
     };
-    load();
+    
+    // 載入站點列表（如果 API 存在）
+    const loadStations = async () => {
+      try {
+        const stations = await stationService.getAllStations();
+        if (mounted && stations && stations.length > 0) {
+          setAvailableStations(stations);
+        }
+      } catch (err) {
+        // API 不存在或失敗時使用預設站點
+        console.log('使用預設站點列表（站點 API 尚未實作或載入失敗）');
+      }
+    };
+    
+    loadTrips();
+    loadStations();
+    
     return () => { mounted = false; };
   }, []);
+
+  // 鍵盤快捷鍵支援
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Escape 鍵關閉所有 Modal
+      if (e.key === 'Escape') {
+        if (showCreateForm) {
+          setShowCreateForm(false);
+          resetForm();
+        }
+        if (showEditModal) {
+          setShowEditModal(false);
+          setEditingTrip(null);
+          resetForm();
+        }
+        if (showDeleteModal) {
+          setShowDeleteModal(false);
+          setDeletingTrip(null);
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showCreateForm, showEditModal, showDeleteModal]);
 
   // 新增：前端建立行程前驗證資料完整性
   const handleCreateTrip = (e) => {
@@ -221,9 +273,10 @@ const TripManagementPage = () => {
         setTrips(prev => [mapped, ...prev]);
         setShowCreateForm(false);
         resetForm();
+        alert('✅ 行程建立成功！');
       } catch (err) {
         console.error('Create trip failed', err);
-        alert('建立行程失敗，請確認是否有權限或稍後再試');
+        alert('❌ 建立行程失敗：' + (err.response?.data?.message || err.message || '請確認是否有權限或稍後再試'));
       }
     })();
   };
@@ -281,10 +334,10 @@ const TripManagementPage = () => {
       setShowEditModal(false);
       setEditingTrip(null);
       resetForm();
-      alert('行程已更新');
+      alert('✅ 行程已更新成功！');
     } catch (err) {
       console.error('Update trip failed', err);
-      alert('更新行程失敗，請稍後再試');
+      alert('❌ 更新行程失敗：' + (err.response?.data?.message || err.message || '請稍後再試'));
     }
   };
 
@@ -303,10 +356,10 @@ const TripManagementPage = () => {
       
       setShowDeleteModal(false);
       setDeletingTrip(null);
-      alert('行程已取消');
+      alert('✅ 行程已標記為已取消');
     } catch (err) {
       console.error('Delete trip failed', err);
-      alert('取消行程失敗，請稍後再試');
+      alert('❌ 取消行程失敗：' + (err.response?.data?.message || err.message || '請稍後再試'));
     }
   };
 
@@ -336,10 +389,17 @@ const TripManagementPage = () => {
         t.id === trip.id ? { ...t, status: newStatus } : t
       ));
       
-      alert('狀態已更新');
+      const statusText = {
+        draft: '草稿',
+        open: '開放',
+        closed: '已關閉',
+        cancelled: '已取消',
+        completed: '已完成'
+      };
+      alert(`✅ 狀態已更新為「${statusText[newStatus] || newStatus}」`);
     } catch (err) {
       console.error('Status change failed', err);
-      alert('狀態更新失敗，請稍後再試');
+      alert('❌ 狀態更新失敗：' + (err.response?.data?.message || err.message || '請稍後再試'));
     }
   };
 
@@ -624,7 +684,7 @@ const TripManagementPage = () => {
         </Modal>
 
         {/* 編輯行程 Modal */}
-        <Modal open={showEditModal} onClose={() => { setShowEditModal(false); setEditingTrip(null); }} title="編輯行程">
+        <Modal open={showEditModal} onClose={() => { setShowEditModal(false); setEditingTrip(null); resetForm(); }} title="編輯行程">
           <form onSubmit={handleEditTrip} className="p-2 md:p-4">
             {/* 基本資料 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -781,7 +841,7 @@ const TripManagementPage = () => {
         </Modal>
 
         {/* 刪除確認 Modal */}
-        <Modal open={showDeleteModal} onClose={() => { setShowDeleteModal(false); setDeletingTrip(null); }} title="確認刪除">
+        <Modal open={showDeleteModal} onClose={() => { setShowDeleteModal(false); setDeletingTrip(null); }} title="⚠️ 確認取消行程">
           <div className="p-6">
             <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full">
               <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -816,11 +876,22 @@ const TripManagementPage = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-4 8v6m-4-3v3m8-3v3m4-6a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">尚無行程</h3>
-              <p className="text-gray-500 mb-6">點擊右上角「新增行程」按鈕來建立第一個行程</p>
-              <Button onClick={() => setShowCreateForm(true)} className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white">
-                立即建立
-              </Button>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                {searchTerm || filterStatus !== 'all' ? '找不到符合條件的行程' : '尚無行程'}
+              </h3>
+              <p className="text-gray-500 mb-6">
+                {searchTerm || filterStatus !== 'all' 
+                  ? '請調整搜尋條件或篩選狀態' 
+                  : '點擊右上角「新增行程」按鈕來建立第一個行程'}
+              </p>
+              {!searchTerm && filterStatus === 'all' && (
+                <Button onClick={() => setShowCreateForm(true)} className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  立即建立行程
+                </Button>
+              )}
             </div>
           )}
           <div className="space-y-4">
@@ -910,15 +981,16 @@ const TripManagementPage = () => {
                   </div>
                   <div className="flex flex-col space-y-2 ml-4">
                     <Button 
-                      onClick={() => navigate(`/trips/${trip.id}`)} 
+                      onClick={() => navigate(`/trips/${trip.id}/manage`)} 
                       size="sm"
                       className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-lg"
+                      title="查看行程詳細資訊並管理車輛、領隊、站點等"
                     >
                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
-                      詳情
+                      詳情管理
                     </Button>
                     <Button 
                       onClick={() => {
@@ -943,6 +1015,7 @@ const TripManagementPage = () => {
                       }} 
                       size="sm"
                       className="bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-lg"
+                      title="編輯行程基本資料"
                     >
                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -956,11 +1029,12 @@ const TripManagementPage = () => {
                       }} 
                       size="sm"
                       className="bg-gradient-to-r from-red-500 to-pink-600 text-white hover:shadow-lg"
+                      title="取消此行程（軟刪除）"
                     >
                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
-                      刪除
+                      取消
                     </Button>
                   </div>
                 </div>
