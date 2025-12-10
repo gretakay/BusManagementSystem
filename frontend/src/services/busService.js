@@ -44,7 +44,7 @@ export const busService = {
   // 取得我負責的車輛 (領隊用)
   async getMyBuses() {
     try {
-      const response = await apiClient.get('/buses/my');
+      const response = await apiClient.get('/bus/my');
       return response.data;
     } catch (err) {
       throw new Error('取得車輛失敗');
@@ -54,10 +54,62 @@ export const busService = {
   // 取得車輛名單
   async getBusRoster(busId) {
     try {
-      const response = await apiClient.get(`/buses/${busId}/roster`);
+      const response = await apiClient.get(`/bus/${busId}/roster`);
       return response.data;
     } catch (err) {
       throw new Error('取得車輛名單失敗');
+    }
+  },
+
+  // 取得所有車輛
+  async getBuses(tripId = null) {
+    try {
+      const params = tripId ? { tripId } : {};
+      const response = await apiClient.get('/bus', { params });
+      return response.data;
+    } catch (err) {
+      throw new Error('取得車輛列表失敗');
+    }
+  },
+
+  // 新增車輛
+  async createBus(busData) {
+    try {
+      const response = await apiClient.post('/bus', busData);
+      return response.data;
+    } catch (err) {
+      throw new Error('新增車輛失敗');
+    }
+  },
+
+  // 更新車輛
+  async updateBus(id, busData) {
+    try {
+      const response = await apiClient.put(`/bus/${id}`, busData);
+      return response.data;
+    } catch (err) {
+      throw new Error('更新車輛失敗');
+    }
+  },
+
+  // 刪除車輛
+  async deleteBus(id) {
+    try {
+      await apiClient.delete(`/bus/${id}`);
+    } catch (err) {
+      throw new Error('刪除車輛失敗');
+    }
+  },
+
+  // 指派車輛到行程
+  async assignBus(tripId, busData) {
+    try {
+      // 先建立車輛
+      const bus = await this.createBus(busData);
+      // TODO: 建立Assignment關聯
+      return bus;
+    } catch (err) {
+      throw new Error('指派車輛失敗');
     }
   },
 };

@@ -39,7 +39,7 @@ namespace BusManagementSystem.Controllers
                 query = query.Where(t => t.Buses.Any(b => b.Id == busId.Value));
 
             if (leaderId.HasValue)
-                query = query.Where(t => t.Buses.Any(b => b.LeaderUserId == leaderId.Value));
+                query = query.Where(t => t.Buses.Any(b => b.LeaderUserId == leaderId.Value.ToString()));
 
             if (personId.HasValue)
                 query = query.Where(t => t.Assignments.Any(a => a.PersonId == personId.Value));
