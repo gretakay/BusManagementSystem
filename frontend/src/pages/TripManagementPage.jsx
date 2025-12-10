@@ -137,20 +137,20 @@ const TripManagementPage = () => {
     (async () => {
       try {
         const payload = {
-          tripName: formData.tripName,
-          startDate: formData.startDate,
-          endDate: formData.endDate,
-          direction: 'outbound',
-          description: formData.description,
-          status: 'draft',
-          departureLocation: formData.departureLocation,
-          destination: formData.destination,
-          estimatedPassengers: formData.estimatedPassengers,
-          contactPerson: formData.contactPerson,
-          contactPhone: formData.contactPhone,
-          tripType: formData.tripType,
-          boardingMode: formData.boardingMode,
-          segments: formData.segments
+          Name: formData.tripName,
+          StartDate: formData.startDate,
+          EndDate: formData.endDate,
+          Direction: formData.direction || 'outbound',
+          Description: formData.description,
+          Status: 'draft',
+          DepartureLocation: formData.departureLocation,
+          Destination: formData.destination,
+          EstimatedPassengers: formData.estimatedPassengers,
+          ContactPerson: formData.contactPerson,
+          ContactPhone: formData.contactPhone,
+          TripType: formData.tripType,
+          BoardingMode: formData.boardingMode,
+          Segments: formData.segments
         };
         const created = await tripService.createTrip(payload);
         const mapped = {
@@ -220,19 +220,91 @@ const TripManagementPage = () => {
 
         {/* 新增行程 Modal 或表單 */}
         <Modal open={showCreateForm} onClose={() => setShowCreateForm(false)} title="新增行程">
-          <form onSubmit={handleCreateTrip} className="space-y-4 p-6">
-            <Input label="行程名稱" value={formData.tripName} onChange={e => setFormData(f => ({ ...f, tripName: e.target.value }))} required />
-            <Input label="出發日期" type="date" value={formData.startDate} onChange={e => setFormData(f => ({ ...f, startDate: e.target.value }))} required />
-            <Input label="結束日期" type="date" value={formData.endDate} onChange={e => setFormData(f => ({ ...f, endDate: e.target.value }))} required />
-            <Input label="出發地點" value={formData.departureLocation} onChange={e => setFormData(f => ({ ...f, departureLocation: e.target.value }))} required />
-            <Input label="目的地" value={formData.destination} onChange={e => setFormData(f => ({ ...f, destination: e.target.value }))} required />
-            <Input label="預估人數" type="number" value={formData.estimatedPassengers} onChange={e => setFormData(f => ({ ...f, estimatedPassengers: e.target.value }))} required />
-            <Input label="聯絡人" value={formData.contactPerson} onChange={e => setFormData(f => ({ ...f, contactPerson: e.target.value }))} />
-            <Input label="聯絡電話" value={formData.contactPhone} onChange={e => setFormData(f => ({ ...f, contactPhone: e.target.value }))} />
-            <Input label="備註" value={formData.description} onChange={e => setFormData(f => ({ ...f, description: e.target.value }))} />
+          <form onSubmit={handleCreateTrip} className="p-2 md:p-4">
+            {/* 基本資料 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">行程名稱 *</label>
+                <Input placeholder="如：台北一日遊" value={formData.tripName} onChange={e => setFormData(f => ({ ...f, tripName: e.target.value }))} required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">預估人數 *</label>
+                <Input type="number" placeholder="如：40" value={formData.estimatedPassengers} onChange={e => setFormData(f => ({ ...f, estimatedPassengers: e.target.value }))} required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">出發日期 *</label>
+                <Input type="date" value={formData.startDate} onChange={e => setFormData(f => ({ ...f, startDate: e.target.value }))} required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">結束日期 *</label>
+                <Input type="date" value={formData.endDate} onChange={e => setFormData(f => ({ ...f, endDate: e.target.value }))} required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">出發地點 *</label>
+                <Input placeholder="如：台北車站" value={formData.departureLocation} onChange={e => setFormData(f => ({ ...f, departureLocation: e.target.value }))} required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">目的地 *</label>
+                <Input placeholder="如：九份" value={formData.destination} onChange={e => setFormData(f => ({ ...f, destination: e.target.value }))} required />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">行程型態 *</label>
+                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg" value={formData.tripType} onChange={e => setFormData(f => ({ ...f, tripType: e.target.value }))} required>
+                  <option value="one_way">單程</option>
+                  <option value="round_trip">去回程</option>
+                  <option value="return_only">僅回程</option>
+                </select>
+              </div>
+            </div>
+            {/* 段次設定區塊 */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">段次設定</label>
+              {formData.tripType === 'one_way' && (
+                <div className="p-3 border rounded-lg mb-2 bg-gray-50">
+                  <div className="mb-2 font-bold text-gray-800">單程</div>
+                  <Input placeholder="出發站" value={formData.segments[0]?.stations[0] || ''} onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }] }))} />
+                </div>
+              )}
+              {formData.tripType === 'round_trip' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-3 border rounded-lg mb-2 bg-gray-50">
+                    <div className="mb-2 font-bold text-gray-800">去程</div>
+                    <Input placeholder="去程出發站" value={formData.segments[0]?.stations[0] || ''} onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }, f.segments[1] || {}] }))} />
+                  </div>
+                  <div className="p-3 border rounded-lg mb-2 bg-gray-50">
+                    <div className="mb-2 font-bold text-gray-800">回程</div>
+                    <Input placeholder="回程出發站" value={formData.segments[1]?.stations[0] || ''} onChange={e => setFormData(f => ({ ...f, segments: [f.segments[0] || {}, { ...f.segments[1], stations: [e.target.value] }] }))} />
+                  </div>
+                </div>
+              )}
+              {formData.tripType === 'return_only' && (
+                <div className="p-3 border rounded-lg mb-2 bg-gray-50">
+                  <div className="mb-2 font-bold text-gray-800">僅回程</div>
+                  <Input placeholder="回程出發站" value={formData.segments[0]?.stations[0] || ''} onChange={e => setFormData(f => ({ ...f, segments: [{ ...f.segments[0], stations: [e.target.value] }] }))} />
+                </div>
+              )}
+            </div>
+            <hr className="my-4" />
+            {/* 聯絡資訊 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">聯絡人</label>
+                <Input placeholder="如：王小明" value={formData.contactPerson} onChange={e => setFormData(f => ({ ...f, contactPerson: e.target.value }))} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">聯絡電話</label>
+                <Input placeholder="如：0912-345-678" value={formData.contactPhone} onChange={e => setFormData(f => ({ ...f, contactPhone: e.target.value }))} />
+              </div>
+            </div>
+            <hr className="my-4" />
+            {/* 備註 */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">備註</label>
+              <Input placeholder="可填寫特殊需求、注意事項等" value={formData.description} onChange={e => setFormData(f => ({ ...f, description: e.target.value }))} />
+            </div>
             <div className="flex justify-end space-x-2 mt-6">
-              <Button type="button" onClick={() => setShowCreateForm(false)} className="bg-gray-300">取消</Button>
-              <Button type="submit" className="bg-blue-600 text-white">建立</Button>
+              <Button type="button" variant="outline" onClick={() => setShowCreateForm(false)} className="bg-gray-100">取消</Button>
+              <Button type="submit" className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">建立</Button>
             </div>
           </form>
         </Modal>
