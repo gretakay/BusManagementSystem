@@ -113,26 +113,12 @@ export const tripService = {
     }
     
     // 新增：所有日期欄位轉 UTC
-    const startDateUtc = toUtcDate(tripData.startDate);
-    const endDateUtc = toUtcDate(tripData.endDate);
+    const dateUtc = toUtcDate(tripData.startDate);
     const payload = {
-      request: {
-        Name: tripData.tripName.trim(),
-        Date: startDateUtc || new Date().toISOString(),
-        Description: tripData.description || '',
-        Direction: directionMap[tripData.direction?.toLowerCase()] || directionMap.outbound,
-        Status: statusMap[tripData.status?.toLowerCase()] || statusMap.draft,
-        StartDate: startDateUtc || new Date().toISOString(),
-        EndDate: endDateUtc || new Date().toISOString(),
-        DepartureLocation: tripData.departureLocation || '',
-        Destination: tripData.destination || '',
-        EstimatedPassengers: parseInt(tripData.estimatedPassengers) || 0,
-        ContactPerson: tripData.contactPerson || '',
-        ContactPhone: tripData.contactPhone || '',
-        TripType: tripData.tripType || 'one_way',
-        BoardingMode: tripData.boardingMode || 'assigned',
-        Segments: tripData.segments || []
-      }
+      Name: tripData.tripName.trim(),
+      Date: dateUtc || new Date().toISOString(),
+      Direction: directionMap[tripData.direction?.toLowerCase()] || directionMap.outbound,
+      Description: tripData.description || ''
     };
     console.log('API payload to send:', JSON.stringify(payload, null, 2));
     try {
