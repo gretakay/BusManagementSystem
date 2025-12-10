@@ -12,43 +12,47 @@ const TripManageDetailPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: 串接 API 取得行程詳細資料
-    // 目前用 mock 資料
-    setTrip({
-      id,
-      tripName: '台北陽明山一日遊',
-      startDate: '2025-11-15',
-      endDate: '2025-11-15',
-      departureLocation: '台北車站',
-      destination: '陽明山國家公園',
-      estimatedPassengers: 42,
-      actualPassengers: 38,
-      description: '陽明山賞花一日遊，包含竹子湖海芋季',
-      contactPerson: '王小明',
-      contactPhone: '0912-345-678',
-      status: 'confirmed',
-      tripType: 'round_trip',
-      boardingMode: 'assigned',
-      segments: [
-        {
-          id: 1,
-          type: 'outbound',
-          date: '2025-11-15',
-          time: '08:00',
-          stations: [
-            { id: 1, name: '台北車站', type: 'pickup', stopDuration: 0 },
-            { id: 4, name: '西門町', type: 'pickup', stopDuration: 10 },
-            { id: 6, name: '陽明山國家公園', type: 'dropoff', stopDuration: 0 }
-          ],
-          estimatedDuration: '1.5',
-          vehicleAssigned: 'ABC-1234',
-          leaderAssigned: '領隊小王',
-          status: 'confirmed',
-          notes: ''
-        }
-      ]
-    });
-    setLoading(false);
+    setLoading(true);
+    tripService.getTripById(id)
+      .then(data => {
+        // 轉換 API 回傳資料格式為前端顯示格式
+        const tripData = {
+          id: data.id || data.Id,
+          tripName: data.name || data.Name,
+          startDate: data.startDate || data.StartDate,
+          endDate: data.endDate || data.EndDate,
+          departureLocation: data.departureLocation || data.DepartureLocation,
+          destination: data.destination || data.Destination,
+          estimatedPassengers: data.estimatedPassengers || data.EstimatedPassengers,
+          actualPassengers: data.actualPassengers || data.ActualPassengers,
+          description: data.description || data.Description,
+          contactPerson: data.contactPerson || data.ContactPerson,
+          contactPhone: data.contactPhone || data.ContactPhone,
+          status: (data.status || data.Status || '').toLowerCase(),
+          tripType: data.tripType || data.TripType,
+          boardingMode: data.boardingMode || data.BoardingMode,
+          segments: (data.segments || data.Segments || []).map(seg => ({
+            id: seg.id || seg.Id,
+            type: seg.type || seg.Type,
+            date: seg.date || seg.Date,
+            time: seg.time || seg.Time,
+            stations: (seg.stations || seg.Stations || []).map(st => ({
+              id: st.id || st.Id,
+              name: st.name || st.Name,
+              type: st.type || st.Type,
+              stopDuration: st.stopDuration || st.StopDuration || 0
+            })),
+            estimatedDuration: seg.estimatedDuration || seg.EstimatedDuration,
+            vehicleAssigned: seg.vehicleAssigned || seg.VehicleAssigned,
+            leaderAssigned: seg.leaderAssigned || seg.LeaderAssigned,
+            status: (seg.status || seg.Status || '').toLowerCase(),
+            notes: seg.notes || seg.Notes || ''
+          }))
+        };
+        setTrip(tripData);
+      })
+      .catch(() => setTrip(null))
+      .finally(() => setLoading(false));
   }, [id]);
 
   if (loading) return <Layout><div className="p-6">載入中...</div></Layout>;
