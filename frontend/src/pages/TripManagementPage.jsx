@@ -7,9 +7,22 @@ import { Input } from '../components/ui/Input';
 import StationManager from '../components/StationManager';
 
 const TripManagementPage = () => {
+      // 分頁、搜尋、篩選狀態
+      const [page, setPage] = useState(1);
+      const [pageSize, setPageSize] = useState(5);
+      const [keyword, setKeyword] = useState('');
+      const [filterStatus, setFilterStatus] = useState('');
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingTrip, setEditingTrip] = useState(null);
   const [trips, setTrips] = useState([]);
+  // 分頁、搜尋、篩選後的 trips
+  const filteredTrips = trips
+    .filter(t =>
+      (!keyword || t.tripName.includes(keyword) || t.destination.includes(keyword)) &&
+      (!filterStatus || t.status === filterStatus)
+    );
+  const totalPages = Math.ceil(filteredTrips.length / pageSize);
+  const pagedTrips = filteredTrips.slice((page - 1) * pageSize, page * pageSize);
   const [loading, setLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
@@ -549,7 +562,7 @@ const TripManagementPage = () => {
         {/* 行程統計 */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {statusOptions.map((status) => {
-            const count = trips.filter(t => t.status === status.value).length;
+            const count = filteredTrips.filter(t => t.status === status.value).length;
             return (
               <div key={status.value} className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 text-center">
                 <div className="text-xl mb-1">{status.icon}</div>
@@ -921,11 +934,33 @@ const TripManagementPage = () => {
           </div>
         )}
 
-        {/* 行程列表 */}
+        {/* 搜尋與篩選區塊 */}
+        <div className="flex flex-col md:flex-row md:items-center md:space-x-4 mb-4">
+          <input
+            type="text"
+            className="border rounded px-3 py-2 mb-2 md:mb-0"
+            placeholder="搜尋行程名稱或目的地"
+            value={keyword}
+            onChange={e => { setKeyword(e.target.value); setPage(1); }}
+            style={{ minWidth: 200 }}
+          />
+          <select
+            className="border rounded px-3 py-2 mb-2 md:mb-0"
+            value={filterStatus}
+            onChange={e => { setFilterStatus(e.target.value); setPage(1); }}
+            style={{ minWidth: 150 }}
+          >
+            <option value="">全部狀態</option>
+            {statusOptions.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+        {/* 行程列表（分頁） */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <h2 className="text-xl font-bold text-gray-900 mb-4">行程列表</h2>
           <div className="space-y-4">
-            {trips.map((trip) => {
+            {pagedTrips.map((trip) => {
               const statusDisplay = getStatusDisplay(trip.status);
               const progress = getProgressStats(trip);
               const daysCount = getDaysCount(trip.startDate, trip.endDate);
@@ -1211,6 +1246,15 @@ const TripManagementPage = () => {
                 </div>
               );
             })}
+          </div>
+          {/* 分頁按鈕 */}
+          <div className="flex justify-center items-center space-x-2 mt-6">
+            <Button disabled={page === 1} onClick={() => setPage(page - 1)}>上一頁</Button>
+            <span>第 {page} / {totalPages || 1} 頁</span>
+            <Button disabled={page === totalPages || totalPages === 0} onClick={() => setPage(page + 1)}>下一頁</Button>
+            <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }} className="border rounded px-2 py-1 ml-2">
+              {[5, 10, 20].map(size => <option key={size} value={size}>{size} 筆/頁</option>)}
+            </select>
           </div>
         </div>
       </div>
