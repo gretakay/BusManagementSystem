@@ -11,3 +11,9 @@ services:
         value: Production
       - key: ASPNETCORE_URLS
         value: http://0.0.0.0:$PORT
+      - key: ConnectionStrings__DefaultConnection
+        value: Host=ep-noisy-shape-a1wz32ec-pooler.ap-southeast-1.aws.neon.tech;Database=neondb;Username=neondb_owner;Password=npg_C1Vk9TenJgNx;SSL Mode=Require;Channel Binding=require
+      - key: JwtSettings__SecretKey
+        sync: false  # 應在Render Dashboard設定為Secret
+      - key: QrCodeSettings__SecretKey
+        sync: false  # 應在Render Dashboard設定為Secret
