@@ -14,6 +14,12 @@ services:
       - key: ConnectionStrings__DefaultConnection
         value: Host=ep-noisy-shape-a1wz32ec-pooler.ap-southeast-1.aws.neon.tech;Database=neondb;Username=neondb_owner;Password=npg_C1Vk9TenJgNx;SSL Mode=Require;Channel Binding=require
       - key: JwtSettings__SecretKey
-        sync: false  # 應在Render Dashboard設定為Secret
+        value: BusManagement_SuperSecretKey_ForJWT_Authentication_2025
+      - key: JwtSettings__Issuer
+        value: BusManagementSystem
+      - key: JwtSettings__Audience
+        value: BusManagementUsers
+      - key: JwtSettings__ExpiryMinutes
+        value: 60
       - key: QrCodeSettings__SecretKey
-        sync: false  # 應在Render Dashboard設定為Secret
+        value: QR_Secret_Key_For_Bus_Scanning_2025
