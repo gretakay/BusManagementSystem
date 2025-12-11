@@ -31,11 +31,11 @@ namespace BusManagementSystem.Models
         public string Name { get; set; } = string.Empty;
 
         // 新增：支援多日行程
-        [Required]
-        public DateTime StartDate { get; set; } // 行程開始日期（UTC）
+		[NotMapped]
+        public DateTime StartDate { get; set; } // 行程開始日期（僅程式用，DB無此欄位）
 
-        [Required]
-        public DateTime EndDate { get; set; }   // 行程結束日期（UTC）
+		[NotMapped]
+        public DateTime EndDate { get; set; }   // 行程結束日期（僅程式用，DB無此欄位）
 
         // 保留原本 Date 欄位，方便舊資料遷移
         [NotMapped]
