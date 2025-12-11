@@ -87,8 +87,8 @@ namespace BusManagementSystem.Controllers
                     .Include(tl => tl.Person)
                     .Where(tl => tl.Person.StudentId == request.UserIdentifier && 
                                  tl.IsActive &&
-                                 tl.Trip.StartDate.Date >= today.AddDays(-1) && // 行程結束後1天內
-                                 tl.Trip.StartDate.Date <= today.AddDays(30)) // 未來30天內的行程
+                                 tl.Trip.Date.Date >= today.AddDays(-1) && // 行程結束後1天內
+                                 tl.Trip.Date.Date <= today.AddDays(30)) // 未來30天內的行程
                     .ToListAsync();
 
                 bool isLeaderForAnyTrip = leaderTrips.Any();
@@ -101,7 +101,7 @@ namespace BusManagementSystem.Controllers
                     var canLogin = leaderTrips.Any(tl => tl.CanLoginOnDate(today));
                     if (!canLogin)
                     {
-                        var nextTripDate = leaderTrips.OrderBy(tl => tl.Trip.StartDate).First().Trip.StartDate.Date;
+                        var nextTripDate = leaderTrips.OrderBy(tl => tl.Trip.Date).First().Trip.Date.Date;
                         var loginStartDate = nextTripDate.AddDays(-3);
                         return Unauthorized(new { 
                             message = $"領隊只能在行程前3天到行程後1天內登入。最近行程日期：{nextTripDate:yyyy-MM-dd}，可登入日期：{loginStartDate:yyyy-MM-dd}" 
