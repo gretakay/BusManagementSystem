@@ -1,0 +1,98 @@
+rules_version = '2';
+
+// 權限設計說明(對應規格書 §3):
+// - 角色來源是 roles/{uid} 文件,而不是 Auth custom claims,方便隨時調整領隊指派。
+// - 除了 rollcalls(點名紀錄,不含敏感欄位,需支援離線直寫)以外,
+//   其餘集合一律禁止 client 端直接寫入,寫入動作都走 Next.js API route(Admin SDK,略過 rules)。
+//   這樣可以確保：passengers 的手機號碼加密邏輯、trips 狀態轉換(建立/封存/解除封存)
+//   都集中在後端可控的程式碼路徑,不會被 client 端繞過。
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function roleData() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/roles/$(request.auth.uid)).data
+        : {};
+    }
+
+    function isGlobalSuperLead() {
+      return roleData().get('globalSuperLead', false) == true;
+    }
+
+    function tripAssignment(tripId) {
+      return roleData().get('trips', {}).get(tripId, {});
+    }
+
+    function isTripSuperLead(tripId) {
+      return isGlobalSuperLead() || tripAssignment(tripId).get('superLead', false) == true;
+    }
+
+    function assignedBusIds(tripId) {
+      return tripAssignment(tripId).get('busRoles', {}).keys();
+    }
+
+    function canAccessBus(tripId, busId) {
+      return isTripSuperLead(tripId) || (busId in assignedBusIds(tripId));
+    }
+
+    function hasAnyRoleInTrip(tripId) {
+      return isTripSuperLead(tripId) || assignedBusIds(tripId).size() > 0;
+    }
+
+    function tripStatus(tripId) {
+      return get(/databases/$(database)/documents/trips/$(tripId)).data.status;
+    }
+
+    match /roles/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isGlobalSuperLead());
+      allow write: if false;
+    }
+
+    match /trips/{tripId} {
+      allow read: if hasAnyRoleInTrip(tripId);
+      allow write: if false;
+
+      match /buses/{busId} {
+        allow read: if isTripSuperLead(tripId) || canAccessBus(tripId, busId);
+        allow write: if false;
+      }
+
+      match /passengers/{passengerId} {
+        allow read: if isTripSuperLead(tripId)
+          || (resource.data.busId != null && canAccessBus(tripId, resource.data.busId));
+        allow write: if false;
+      }
+
+      match /rollcalls/{rollcallId} {
+        allow read: if isTripSuperLead(tripId) || canAccessBus(tripId, resource.data.busId);
+
+        allow create: if (isTripSuperLead(tripId) || canAccessBus(tripId, request.resource.data.busId))
+          && tripStatus(tripId) != 'archived'
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.tripId == tripId;
+
+        allow update: if (isTripSuperLead(tripId) || canAccessBus(tripId, resource.data.busId))
+          && tripStatus(tripId) != 'archived'
+          && request.resource.data.busId == resource.data.busId
+          && request.resource.data.createdBy == resource.data.createdBy;
+
+        allow delete: if false;
+      }
+
+      // Phase 2(規格書 §5.4 廣播訊息):型別/讀取權限先備妥,寫入 API 尚未實作。
+      match /broadcasts/{broadcastId} {
+        allow read: if hasAnyRoleInTrip(tripId);
+        allow write: if false;
+      }
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if isGlobalSuperLead();
+      allow write: if false;
+    }
+  }
+}
