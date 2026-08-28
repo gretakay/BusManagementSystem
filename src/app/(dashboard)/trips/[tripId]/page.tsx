@@ -14,6 +14,7 @@ import {
   where,
 } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
+import { useAuth } from "@/lib/auth/AuthProvider";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
 import { apiFetch } from "@/lib/api/client";
 import { TripStatusBadge } from "@/components/trip/TripStatusBadge";
@@ -21,6 +22,13 @@ import type { Trip } from "@/types/trip";
 import type { Bus } from "@/types/bus";
 import type { PassengerListItem } from "@/types/passenger";
 import type { AttendanceStatus, RollCall } from "@/types/rollcall";
+import type { BusRole } from "@/types/role";
+
+const BUS_ROLE_LABELS: Record<BusRole, string> = {
+  leader: "領隊",
+  coLeader: "副領隊",
+  groupLeader: "小組長",
+};
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
   present: "已到",
@@ -36,6 +44,7 @@ const STATUS_STYLES: Record<AttendanceStatus, string> = {
 
 export default function TripDashboardPage() {
   const { tripId } = useParams<{ tripId: string }>();
+  const { role } = useAuth();
   const access = useTripAccess(tripId);
 
   const [trip, setTrip] = useState<Trip | null>(null);
@@ -99,6 +108,17 @@ export default function TripDashboardPage() {
     ? buses
     : buses.filter((b) => access.canAccessBus(b.id));
 
+  const identityLabel = useMemo(() => {
+    if (role?.globalSuperLead) return "總負責人(全域)";
+    if ((trip?.superLeads ?? []).some((s) => s.uid === access.uid)) return "此行程總領隊";
+    const busRoles = role?.trips?.[tripId]?.busRoles ?? {};
+    const parts = Object.entries(busRoles).map(([busId, busRole]) => {
+      const busNumber = buses.find((b) => b.id === busId)?.busNumber ?? busId;
+      return `${BUS_ROLE_LABELS[busRole]}(${busNumber})`;
+    });
+    return parts.length > 0 ? parts.join("、") : "尚無此行程角色";
+  }, [role, trip, buses, tripId, access.uid]);
+
   async function handleToggleExpand(busId: string) {
     if (expandedBusId === busId) {
       setExpandedBusId(null);
@@ -138,6 +158,7 @@ export default function TripDashboardPage() {
           <p className="text-sm text-gray-400">
             {trip.date} ・ {trip.busCount} 台車
           </p>
+          <p className="mt-1 text-xs text-brand-700">你的身分:{identityLabel}</p>
         </div>
         <div className="flex items-center gap-2">
           <TripStatusBadge status={trip.status} />

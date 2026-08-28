@@ -5,6 +5,7 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { writeAuditLog } from "@/lib/audit";
 import { createTripSchema } from "@/lib/validation/trip";
 import type { Trip } from "@/types/trip";
+import type { Bus } from "@/types/bus";
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,6 +30,23 @@ export async function POST(req: NextRequest) {
       plannedSessions: [],
     };
     await ref.set(trip);
+
+    const busBatch = db.batch();
+    for (let i = 1; i <= input.busCount; i += 1) {
+      const busRef = ref.collection("buses").doc();
+      const bus: Bus = {
+        id: busRef.id,
+        tripId: ref.id,
+        busNumber: `${i}號車`,
+        driverName: "",
+        driverPhone: "",
+        seatCapacity: 40,
+        leaders: [],
+        createdAt: now,
+      };
+      busBatch.set(busRef, bus);
+    }
+    await busBatch.commit();
 
     await writeAuditLog({
       actorUid: user.uid,

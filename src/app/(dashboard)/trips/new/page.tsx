@@ -62,6 +62,9 @@ export default function NewTripPage() {
           onChange={(e) => setBusCount(Number(e.target.value))}
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
         />
+        <p className="text-xs text-gray-400">
+          建立後會自動產生對應數量的車輛(預設命名「N號車」、座位上限40),之後可到車輛管理修改細節。
+        </p>
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
       <button
