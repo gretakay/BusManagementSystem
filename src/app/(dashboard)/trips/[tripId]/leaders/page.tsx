@@ -24,11 +24,13 @@ export default function TripLeadersPage() {
   const [trip, setTrip] = useState<Trip | null>(null);
   const [busId, setBusId] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [role, setRole] = useState<BusRole>("leader");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [superLeadEmail, setSuperLeadEmail] = useState("");
+  const [superLeadPassword, setSuperLeadPassword] = useState("");
   const [superLeadSubmitting, setSuperLeadSubmitting] = useState(false);
   const [superLeadError, setSuperLeadError] = useState<string | null>(null);
 
@@ -56,9 +58,10 @@ export default function TripLeadersPage() {
     try {
       await apiFetch(`/api/trips/${tripId}/superleads`, {
         method: "POST",
-        body: JSON.stringify({ email: superLeadEmail }),
+        body: JSON.stringify({ email: superLeadEmail, password: superLeadPassword || undefined }),
       });
       setSuperLeadEmail("");
+      setSuperLeadPassword("");
     } catch (err) {
       setSuperLeadError(err instanceof Error ? err.message : "指派失敗");
     } finally {
@@ -86,9 +89,10 @@ export default function TripLeadersPage() {
     try {
       await apiFetch(`/api/trips/${tripId}/buses/${busId}/leaders`, {
         method: "POST",
-        body: JSON.stringify({ email, role }),
+        body: JSON.stringify({ email, role, password: password || undefined }),
       });
       setEmail("");
+      setPassword("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "指派失敗");
     } finally {
@@ -116,7 +120,7 @@ export default function TripLeadersPage() {
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">領隊管理</h1>
       <p className="text-sm text-gray-500">
-        指派各車輛的領隊/副領隊/小組長,以及此行程的總領隊。對方需已用該 email 登入過系統一次(建立帳號)才能被指派。
+        指派各車輛的領隊/副領隊/小組長,以及此行程的總領隊。對方如果還沒有帳號,填密碼欄位即可順便建立;已有帳號的話密碼留空即可。
       </p>
 
       <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
@@ -130,6 +134,13 @@ export default function TripLeadersPage() {
             placeholder="要指派為總領隊的 Email"
             value={superLeadEmail}
             onChange={(e) => setSuperLeadEmail(e.target.value)}
+            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
+          />
+          <input
+            type="text"
+            placeholder="密碼(對方還沒帳號才需填,至少6碼)"
+            value={superLeadPassword}
+            onChange={(e) => setSuperLeadPassword(e.target.value)}
             className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
           />
           <button
@@ -196,6 +207,13 @@ export default function TripLeadersPage() {
           placeholder="要指派人員的 Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+        />
+        <input
+          type="text"
+          placeholder="密碼(對方還沒帳號才需填,至少6碼)"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           className="rounded-md border border-gray-300 px-3 py-2 text-sm"
         />
         {error && <p className="text-sm text-red-600">{error}</p>}

@@ -50,3 +50,19 @@ export function requireBusAccess(user: AuthedUser, tripId: string, busId: string
     throw new ForbiddenError("無此車輛存取權限");
   }
 }
+
+/**
+ * 指派角色時常見流程:對方 email 若已有帳號直接沿用,若沒有且有提供密碼則現場建立帳號。
+ * 沒有帳號又沒提供密碼時回傳 null,由呼叫端決定要回什麼錯誤訊息。
+ */
+export async function findOrCreateUserByEmail(
+  email: string,
+  password?: string,
+): Promise<{ uid: string; email: string | null } | null> {
+  const auth = getAdminAuth();
+  const existing = await auth.getUserByEmail(email).catch(() => null);
+  if (existing) return { uid: existing.uid, email: existing.email ?? null };
+  if (!password) return null;
+  const created = await auth.createUser({ email, password });
+  return { uid: created.uid, email: created.email ?? null };
+}

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
-import { requireUser, requireTripSuperLead } from "@/lib/auth/session";
+import { requireUser, requireTripSuperLead, findOrCreateUserByEmail } from "@/lib/auth/session";
 import { handleApiError } from "@/lib/api/handleError";
-import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { writeAuditLog } from "@/lib/audit";
 import { assignBusLeaderSchema, removeBusLeaderSchema } from "@/lib/validation/bus";
 import type { Bus, BusLeaderAssignment } from "@/types/bus";
@@ -19,14 +19,12 @@ export async function POST(
   try {
     const user = await requireUser(req);
     requireTripSuperLead(user, params.tripId);
-    const { email, role } = assignBusLeaderSchema.parse(await req.json());
+    const { email, role, password } = assignBusLeaderSchema.parse(await req.json());
 
-    const targetUser = await getAdminAuth()
-      .getUserByEmail(email)
-      .catch(() => null);
+    const targetUser = await findOrCreateUserByEmail(email, password);
     if (!targetUser) {
       return NextResponse.json(
-        { error: `找不到 email 為 ${email} 的帳號,請先請該使用者完成註冊/登入` },
+        { error: `找不到 email 為 ${email} 的帳號,請填密碼幫對方建立新帳號,或請對方先自行註冊/登入` },
         { status: 404 },
       );
     }

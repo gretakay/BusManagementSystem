@@ -19,6 +19,7 @@ export const updateTripSchema = z.object({
 
 export const assignTripSuperLeadSchema = z.object({
   email: z.string().trim().email("Email 格式錯誤"),
+  password: z.string().min(6, "密碼至少 6 碼").optional(),
 });
 
 export const removeTripSuperLeadSchema = z.object({
