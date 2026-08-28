@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import clsx from "clsx";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { apiFetch } from "@/lib/api/client";
@@ -9,10 +10,11 @@ import { useTripAccess } from "@/lib/auth/useTripAccess";
 import type { Bus } from "@/types/bus";
 import type { PassengerListItem } from "@/types/passenger";
 
+const UNASSIGNED = "__unassigned__";
+
 /**
- * 排車頁面(MVP):目前僅實作「逐一調整」(下拉選單變更車次)+ 排車總覽。
- * 拖曳介面與批次條件分派為 Phase 2 TODO(規格書 §5.2.1 方式二、三),
- * 屆時可在此頁面加入 @dnd-kit 的人員池/車輛卡片拖曳區塊,以及依身分別/組別篩選的批次指派表單。
+ * 排車頁面(MVP):篩選分頁(全部/尚未分配/各車)+ 逐一調整 + 勾選多筆批次指派 + 排車總覽。
+ * 拖曳介面與批次條件分派(依身分別/組別)為 Phase 2 TODO(規格書 §5.2.1 方式二、三)。
  */
 export default function SeatingPage() {
   const { tripId } = useParams<{ tripId: string }>();
@@ -20,6 +22,11 @@ export default function SeatingPage() {
   const [buses, setBuses] = useState<Bus[]>([]);
   const [passengers, setPassengers] = useState<PassengerListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<string>("");
+  const [search, setSearch] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkTargetBusId, setBulkTargetBusId] = useState("");
+  const [bulkApplying, setBulkApplying] = useState(false);
 
   useEffect(() => {
     const q = query(collection(getDb(), "trips", tripId, "buses"), orderBy("busNumber"));
@@ -65,6 +72,56 @@ export default function SeatingPage() {
     }
   }
 
+  const filteredPassengers = passengers.filter((p) => {
+    if (filter === UNASSIGNED && p.busId) return false;
+    if (filter && filter !== UNASSIGNED && p.busId !== filter) return false;
+    if (search && !p.name.includes(search) && !p.regNo.includes(search)) return false;
+    return true;
+  });
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAllFiltered() {
+    setSelectedIds((prev) => {
+      const allSelected = filteredPassengers.every((p) => prev.has(p.id));
+      if (allSelected) {
+        const next = new Set(prev);
+        filteredPassengers.forEach((p) => next.delete(p.id));
+        return next;
+      }
+      const next = new Set(prev);
+      filteredPassengers.forEach((p) => next.add(p.id));
+      return next;
+    });
+  }
+
+  async function handleBulkApply() {
+    if (selectedIds.size === 0) return;
+    setBulkApplying(true);
+    const nextBusId = bulkTargetBusId === "" ? null : bulkTargetBusId;
+    try {
+      for (const id of selectedIds) {
+        const updated = await apiFetch<PassengerListItem>(`/api/trips/${tripId}/passengers/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ busId: nextBusId }),
+        });
+        setPassengers((prev) => prev.map((p) => (p.id === id ? updated : p)));
+      }
+      setSelectedIds(new Set());
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "批次指派失敗");
+    } finally {
+      setBulkApplying(false);
+    }
+  }
+
   if (!access.isSuperLead) {
     return <p className="text-sm text-red-600">你沒有權限查看此行程的排車。</p>;
   }
@@ -102,19 +159,108 @@ export default function SeatingPage() {
       </div>
 
       <div className="rounded-lg border border-gray-200 bg-white">
-        <h2 className="border-b border-gray-100 px-4 py-2 text-sm font-medium text-gray-500">
-          人員車次調整(逐一調整)
-        </h2>
+        <div className="space-y-3 border-b border-gray-100 p-4">
+          <h2 className="text-sm font-medium text-gray-500">人員車次調整</h2>
+
+          <div className="flex flex-wrap gap-2 text-xs">
+            <button
+              onClick={() => setFilter("")}
+              className={clsx(
+                "rounded-full px-3 py-1",
+                filter === "" ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600",
+              )}
+            >
+              全部({passengers.length})
+            </button>
+            <button
+              onClick={() => setFilter(UNASSIGNED)}
+              className={clsx(
+                "rounded-full px-3 py-1",
+                filter === UNASSIGNED ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600",
+              )}
+            >
+              尚未分配({counts.unassigned})
+            </button>
+            {buses.map((bus) => (
+              <button
+                key={bus.id}
+                onClick={() => setFilter(bus.id)}
+                className={clsx(
+                  "rounded-full px-3 py-1",
+                  filter === bus.id ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600",
+                )}
+              >
+                {bus.busNumber}({counts.byBus.get(bus.id) ?? 0})
+              </button>
+            ))}
+          </div>
+
+          <input
+            placeholder="搜尋姓名或報名序號"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full max-w-xs rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+          />
+
+          {selectedIds.size > 0 && (
+            <div className="flex flex-wrap items-center gap-2 rounded-md bg-brand-50 px-3 py-2 text-sm">
+              <span>已選 {selectedIds.size} 人</span>
+              <select
+                value={bulkTargetBusId}
+                onChange={(e) => setBulkTargetBusId(e.target.value)}
+                className="rounded-md border border-gray-300 px-2 py-1 text-sm"
+              >
+                <option value="">未分配</option>
+                {buses.map((bus) => (
+                  <option key={bus.id} value={bus.id}>
+                    {bus.busNumber}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={handleBulkApply}
+                disabled={bulkApplying}
+                className="rounded-md bg-brand-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+              >
+                {bulkApplying ? "套用中…" : "套用到選取的人"}
+              </button>
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="text-xs text-gray-500"
+              >
+                清除選取
+              </button>
+            </div>
+          )}
+        </div>
+
         {loading ? (
           <p className="p-4 text-sm text-gray-400">載入中…</p>
+        ) : filteredPassengers.length === 0 ? (
+          <p className="p-4 text-sm text-gray-400">沒有符合條件的人員。</p>
         ) : (
           <ul className="divide-y divide-gray-100">
-            {passengers.map((p) => (
-              <li key={p.id} className="flex items-center justify-between px-4 py-2 text-sm">
-                <span>
-                  {p.name}
-                  <span className="ml-2 text-xs text-gray-400">{p.regNo}</span>
-                </span>
+            <li className="flex items-center gap-3 px-4 py-2 text-xs text-gray-400">
+              <input
+                type="checkbox"
+                checked={filteredPassengers.length > 0 && filteredPassengers.every((p) => selectedIds.has(p.id))}
+                onChange={toggleSelectAllFiltered}
+              />
+              全選目前篩選結果
+            </li>
+            {filteredPassengers.map((p) => (
+              <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-2 text-sm">
+                <label className="flex flex-1 items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(p.id)}
+                    onChange={() => toggleSelected(p.id)}
+                  />
+                  <span>
+                    {p.name}
+                    <span className="ml-2 text-xs text-gray-400">{p.regNo}</span>
+                  </span>
+                </label>
                 <select
                   value={p.busId ?? ""}
                   onChange={(e) => handleReassign(p.id, e.target.value)}
