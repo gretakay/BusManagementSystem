@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import clsx from "clsx";
 import {
@@ -46,6 +46,8 @@ export default function BusRollCallPage() {
   const [scanning, setScanning] = useState(false);
   const [creatingSession, setCreatingSession] = useState(false);
   const [contactCache, setContactCache] = useState<Record<string, PassengerContactInfo>>({});
+  const [qrFeedback, setQrFeedback] = useState<string | null>(null);
+  const qrFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     apiFetch<PassengerListItem[]>(`/api/trips/${tripId}/passengers?busId=${busId}`)
@@ -73,6 +75,12 @@ export default function BusRollCallPage() {
     });
     return () => unsub();
   }, [tripId, busId]);
+
+  useEffect(() => {
+    return () => {
+      if (qrFeedbackTimer.current) clearTimeout(qrFeedbackTimer.current);
+    };
+  }, []);
 
   const selected = rollcalls.find((r) => r.id === selectedId) ?? null;
 
@@ -130,6 +138,9 @@ export default function BusRollCallPage() {
       return;
     }
     await markStatus(passenger.id, "present", "qr");
+    if (qrFeedbackTimer.current) clearTimeout(qrFeedbackTimer.current);
+    setQrFeedback(`${passenger.name} 報到成功`);
+    qrFeedbackTimer.current = setTimeout(() => setQrFeedback(null), 2000);
   }
 
   async function loadContact(passengerId: string): Promise<PassengerContactInfo> {
@@ -154,6 +165,20 @@ export default function BusRollCallPage() {
       alert(err instanceof Error ? err.message : "取得電話失敗");
     }
   }
+
+  const summary = useMemo(() => {
+    if (!selected) return null;
+    let present = 0;
+    let absent = 0;
+    let leave = 0;
+    for (const p of roster) {
+      const status = selected.records[p.id]?.status;
+      if (status === "present") present += 1;
+      else if (status === "absent") absent += 1;
+      else if (status === "leave") leave += 1;
+    }
+    return { total: roster.length, present, absent, leave, unmarked: roster.length - present - absent - leave };
+  }, [roster, selected]);
 
   const filteredRoster = roster.filter(
     (p) =>
@@ -211,10 +236,24 @@ export default function BusRollCallPage() {
         </div>
       </div>
 
-      {!selected ? (
+      {!selected || !summary ? (
         <p className="text-sm text-gray-400">請先建立一個點名場次。</p>
       ) : (
         <>
+          <div className="flex flex-wrap gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
+            <span>共 {summary.total} 人</span>
+            <span className="text-green-700">已到 {summary.present}</span>
+            <span className="text-red-600">未到 {summary.absent}</span>
+            <span className="text-amber-600">請假 {summary.leave}</span>
+            <span className="font-medium text-gray-700">尚有 {summary.unmarked} 人未報到</span>
+          </div>
+
+          {qrFeedback && (
+            <div className="rounded-md bg-green-50 px-3 py-2 text-sm font-medium text-green-700">
+              ✓ {qrFeedback}
+            </div>
+          )}
+
           <div className="flex items-center gap-2">
             <input
               placeholder="搜尋姓名、序號或手機後四碼"
@@ -244,6 +283,7 @@ export default function BusRollCallPage() {
                         {p.regNo}
                         {p.phoneLast4 && ` ・ ****${p.phoneLast4}`}
                       </p>
+                      {!record && <p className="text-xs text-gray-400">未報到</p>}
                     </div>
                     <div className="flex gap-1">
                       {(["present", "absent", "leave"] as AttendanceStatus[]).map((status) => (
