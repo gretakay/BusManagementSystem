@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { useParams } from "next/navigation";
 import * as XLSX from "xlsx";
 import { apiFetch } from "@/lib/api/client";
+import { useTripAccess } from "@/lib/auth/useTripAccess";
 import type {
   ImportPassengersResult,
   PassengerIdentity,
@@ -53,6 +54,7 @@ const IDENTITY_FROM_TEXT: Record<string, PassengerIdentity> = {
 
 export default function PassengersPage() {
   const { tripId } = useParams<{ tripId: string }>();
+  const access = useTripAccess(tripId);
   const [passengers, setPassengers] = useState<PassengerListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<UpsertPassengerInput>(emptyForm);
@@ -128,6 +130,10 @@ export default function PassengersPage() {
       setImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  }
+
+  if (!access.isSuperLead) {
+    return <p className="text-sm text-red-600">你沒有權限查看此行程的人員管理。</p>;
   }
 
   return (

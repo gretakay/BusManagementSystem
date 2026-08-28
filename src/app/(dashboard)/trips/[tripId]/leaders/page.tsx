@@ -34,6 +34,11 @@ export default function TripLeadersPage() {
   const [superLeadSubmitting, setSuperLeadSubmitting] = useState(false);
   const [superLeadError, setSuperLeadError] = useState<string | null>(null);
 
+  const [resetTarget, setResetTarget] = useState<{ uid: string; email: string } | null>(null);
+  const [resetPasswordValue, setResetPasswordValue] = useState("");
+  const [resetSubmitting, setResetSubmitting] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+
   useEffect(() => {
     const q = query(collection(getDb(), "trips", tripId, "buses"), orderBy("busNumber"));
     const unsub = onSnapshot(q, (snap) => {
@@ -112,6 +117,26 @@ export default function TripLeadersPage() {
     }
   }
 
+  async function handleResetPassword(e: FormEvent) {
+    e.preventDefault();
+    if (!resetTarget) return;
+    setResetError(null);
+    setResetSubmitting(true);
+    try {
+      await apiFetch(`/api/trips/${tripId}/reset-password`, {
+        method: "POST",
+        body: JSON.stringify({ uid: resetTarget.uid, password: resetPasswordValue }),
+      });
+      alert(`已重設 ${resetTarget.email} 的密碼,請把新密碼告訴對方。`);
+      setResetTarget(null);
+      setResetPasswordValue("");
+    } catch (err) {
+      setResetError(err instanceof Error ? err.message : "重設失敗");
+    } finally {
+      setResetSubmitting(false);
+    }
+  }
+
   if (!access.isSuperLead) {
     return <p className="text-sm text-red-600">你沒有權限管理此行程的領隊指派。</p>;
   }
@@ -122,6 +147,44 @@ export default function TripLeadersPage() {
       <p className="text-sm text-gray-500">
         指派各車輛的領隊/副領隊/小組長,以及此行程的總領隊。對方如果還沒有帳號,填密碼欄位即可順便建立;已有帳號的話密碼留空即可。
       </p>
+
+      {resetTarget && (
+        <form
+          onSubmit={handleResetPassword}
+          className="space-y-2 rounded-lg border border-brand-200 bg-brand-50 p-4"
+        >
+          <p className="text-sm font-medium">為 {resetTarget.email} 設定新密碼</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              required
+              type="text"
+              placeholder="新密碼(至少6碼)"
+              value={resetPasswordValue}
+              onChange={(e) => setResetPasswordValue(e.target.value)}
+              className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
+            <button
+              type="submit"
+              disabled={resetSubmitting}
+              className="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+            >
+              {resetSubmitting ? "設定中…" : "確認重設"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setResetTarget(null);
+                setResetPasswordValue("");
+                setResetError(null);
+              }}
+              className="rounded-md border border-gray-300 px-4 py-2 text-sm"
+            >
+              取消
+            </button>
+          </div>
+          {resetError && <p className="text-sm text-red-600">{resetError}</p>}
+        </form>
+      )}
 
       <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
         <h2 className="text-sm font-medium text-gray-500">
@@ -164,6 +227,16 @@ export default function TripLeadersPage() {
                 className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600"
               >
                 {s.email}
+                <button
+                  onClick={() => {
+                    setResetTarget({ uid: s.uid, email: s.email });
+                    setResetPasswordValue("");
+                    setResetError(null);
+                  }}
+                  className="text-gray-400 hover:text-brand-600"
+                >
+                  重設密碼
+                </button>
                 <button onClick={() => handleRemoveSuperLead(s.uid)} className="text-gray-400 hover:text-red-500">
                   ×
                 </button>
@@ -245,6 +318,16 @@ export default function TripLeadersPage() {
                         className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600"
                       >
                         {ROLE_LABELS[l.role]}:{l.email}
+                        <button
+                          onClick={() => {
+                            setResetTarget({ uid: l.uid, email: l.email });
+                            setResetPasswordValue("");
+                            setResetError(null);
+                          }}
+                          className="text-gray-400 hover:text-brand-600"
+                        >
+                          重設密碼
+                        </button>
                         <button
                           onClick={() => handleRemove(bus.id, l.uid)}
                           className="text-gray-400 hover:text-red-500"

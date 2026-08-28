@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { apiFetch } from "@/lib/api/client";
+import { useTripAccess } from "@/lib/auth/useTripAccess";
 import type { Bus } from "@/types/bus";
 import type { PassengerListItem } from "@/types/passenger";
 
@@ -15,6 +16,7 @@ import type { PassengerListItem } from "@/types/passenger";
  */
 export default function SeatingPage() {
   const { tripId } = useParams<{ tripId: string }>();
+  const access = useTripAccess(tripId);
   const [buses, setBuses] = useState<Bus[]>([]);
   const [passengers, setPassengers] = useState<PassengerListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,6 +63,10 @@ export default function SeatingPage() {
     } catch (err) {
       alert(err instanceof Error ? err.message : "調整失敗");
     }
+  }
+
+  if (!access.isSuperLead) {
+    return <p className="text-sm text-red-600">你沒有權限查看此行程的排車。</p>;
   }
 
   return (

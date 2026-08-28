@@ -6,6 +6,7 @@ import Link from "next/link";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { apiFetch } from "@/lib/api/client";
+import { useTripAccess } from "@/lib/auth/useTripAccess";
 import type { Bus } from "@/types/bus";
 import type { BusRole } from "@/types/role";
 
@@ -17,6 +18,7 @@ const ROLE_LABELS: Record<BusRole, string> = {
 
 export default function BusesPage() {
   const { tripId } = useParams<{ tripId: string }>();
+  const access = useTripAccess(tripId);
   const [buses, setBuses] = useState<Bus[]>([]);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
@@ -46,6 +48,10 @@ export default function BusesPage() {
     } finally {
       setCreating(false);
     }
+  }
+
+  if (!access.isSuperLead) {
+    return <p className="text-sm text-red-600">你沒有權限查看此行程的車輛管理。</p>;
   }
 
   return (

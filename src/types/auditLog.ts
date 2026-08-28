@@ -5,6 +5,7 @@ export type AuditAction =
   | "bus.create"
   | "bus.assignLeader"
   | "trip.assignSuperLead"
+  | "user.resetPassword"
   | "passenger.import"
   | "passenger.upsert"
   | "rollcall.create";
