@@ -40,7 +40,7 @@ export async function POST(
     await roleRef.set(
       {
         email: targetUser.email ?? email,
-        [`trips.${params.tripId}.busRoles.${params.busId}`]: role,
+        trips: { [params.tripId]: { busRoles: { [params.busId]: role } } },
       },
       { merge: true },
     );

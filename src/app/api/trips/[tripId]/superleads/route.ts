@@ -36,7 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: { tripId: str
     await roleRef.set(
       {
         email: targetUser.email ?? email,
-        [`trips.${params.tripId}.superLead`]: true,
+        trips: { [params.tripId]: { superLead: true } },
       },
       { merge: true },
     );
