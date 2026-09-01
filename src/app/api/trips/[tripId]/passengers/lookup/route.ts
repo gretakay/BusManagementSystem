@@ -3,7 +3,7 @@ import { requireUser, requireBusAccess } from "@/lib/auth/session";
 import { handleApiError } from "@/lib/api/handleError";
 import { getAdminDb } from "@/lib/firebase/admin";
 import type { Bus } from "@/types/bus";
-import { SELF_ARRANGED, type Passenger } from "@/types/passenger";
+import type { Passenger } from "@/types/passenger";
 
 export interface PassengerLookupResult {
   found: boolean;
@@ -51,9 +51,7 @@ export async function GET(req: NextRequest, { params }: { params: { tripId: stri
     }
 
     let busNumber: string | null = null;
-    if (assignedBusId === SELF_ARRANGED) {
-      busNumber = "自行前往(不搭遊覽車)";
-    } else if (assignedBusId) {
+    if (assignedBusId) {
       const busSnap = await db
         .collection("trips")
         .doc(params.tripId)

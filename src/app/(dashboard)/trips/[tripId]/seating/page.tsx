@@ -8,7 +8,7 @@ import { getDb } from "@/lib/firebase/client";
 import { apiFetch } from "@/lib/api/client";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
 import type { Bus } from "@/types/bus";
-import { SELF_ARRANGED, type PassengerListItem, type TripLeg } from "@/types/passenger";
+import type { PassengerListItem, TripLeg } from "@/types/passenger";
 
 const UNASSIGNED = "__unassigned__";
 
@@ -18,8 +18,9 @@ const LEG_LABELS: Record<TripLeg, string> = {
 };
 
 /**
- * 排車頁面(MVP):去程/回程各自獨立排車(可能搭不同車,或其中一段自行開車)+
- * 篩選分頁(全部/尚未分配/自行前往/各車)+ 逐一調整 + 勾選多筆批次指派 + 排車總覽。
+ * 排車頁面(MVP):去程/回程各自獨立排車(可能搭不同車)+
+ * 篩選分頁(全部/尚未分配/各車)+ 逐一調整 + 勾選多筆批次指派 + 排車總覽。
+ * 自行開車的人也視為搭一台(虛擬)車輛,不做特殊狀態,才能沿用既有點名功能。
  * 拖曳介面與批次條件分派(依身分別/組別)為 Phase 2 TODO(規格書 §5.2.1 方式二、三)。
  */
 export default function SeatingPage() {
@@ -68,14 +69,12 @@ export default function SeatingPage() {
   const counts = useMemo(() => {
     const map = new Map<string, number>();
     let unassigned = 0;
-    let selfArranged = 0;
     for (const p of passengers) {
       const busId = p[busIdField];
-      if (busId === SELF_ARRANGED) selfArranged += 1;
-      else if (busId) map.set(busId, (map.get(busId) ?? 0) + 1);
+      if (busId) map.set(busId, (map.get(busId) ?? 0) + 1);
       else unassigned += 1;
     }
-    return { byBus: map, unassigned, selfArranged };
+    return { byBus: map, unassigned };
   }, [passengers, busIdField]);
 
   async function handleReassign(passengerId: string, busId: string) {
@@ -94,8 +93,7 @@ export default function SeatingPage() {
   const filteredPassengers = passengers.filter((p) => {
     const busId = p[busIdField];
     if (filter === UNASSIGNED && busId) return false;
-    if (filter === SELF_ARRANGED && busId !== SELF_ARRANGED) return false;
-    if (filter && filter !== UNASSIGNED && filter !== SELF_ARRANGED && busId !== filter) return false;
+    if (filter && filter !== UNASSIGNED && busId !== filter) return false;
     if (search && !p.name.includes(search) && !p.regNo.includes(search)) return false;
     return true;
   });
@@ -196,10 +194,6 @@ export default function SeatingPage() {
             <p className="font-medium">尚未分配</p>
             <p className="text-gray-500">{counts.unassigned} 人</p>
           </li>
-          <li className="rounded-lg border border-gray-200 bg-white p-3 text-sm">
-            <p className="font-medium">自行前往</p>
-            <p className="text-gray-500">{counts.selfArranged} 人</p>
-          </li>
         </ul>
       </div>
 
@@ -225,15 +219,6 @@ export default function SeatingPage() {
               )}
             >
               尚未分配({counts.unassigned})
-            </button>
-            <button
-              onClick={() => setFilter(SELF_ARRANGED)}
-              className={clsx(
-                "rounded-full px-3 py-1",
-                filter === SELF_ARRANGED ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600",
-              )}
-            >
-              自行前往({counts.selfArranged})
             </button>
             {buses.map((bus) => (
               <button
@@ -265,7 +250,6 @@ export default function SeatingPage() {
                 className="rounded-md border border-gray-300 px-2 py-1 text-sm"
               >
                 <option value="">未分配</option>
-                <option value={SELF_ARRANGED}>自行前往(不搭車)</option>
                 {buses.map((bus) => (
                   <option key={bus.id} value={bus.id}>
                     {bus.busNumber}
@@ -322,7 +306,6 @@ export default function SeatingPage() {
                   className="rounded-md border border-gray-300 px-2 py-1 text-sm"
                 >
                   <option value="">未分配</option>
-                  <option value={SELF_ARRANGED}>自行前往(不搭車)</option>
                   {buses.map((bus) => (
                     <option key={bus.id} value={bus.id}>
                       {bus.busNumber}
