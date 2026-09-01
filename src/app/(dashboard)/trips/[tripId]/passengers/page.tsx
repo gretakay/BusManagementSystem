@@ -168,6 +168,11 @@ export default function PassengersPage() {
         <p className="mt-1 text-xs text-gray-400">
           表頭需包含:報名序號、姓名、法名、手機號碼、身分別(貴賓/信眾/義工)、義工組別、緊急聯絡人姓名、緊急聯絡人電話。
           以報名序號比對,重新匯入同一份檔案會更新既有資料(Upsert),不會清空重建。
+          個別列格式錯誤只會該列失敗,其餘正確的列仍會照常匯入。
+        </p>
+        <p className="mt-1 text-xs text-amber-600">
+          建議直接用上方「下載範例檔」修改,若自行在 Excel 輸入報名序號、手機號碼,
+          請先將該欄位格式設為「文字」,避免開頭的 0 被 Excel 自動去掉。
         </p>
         <input
           ref={fileInputRef}

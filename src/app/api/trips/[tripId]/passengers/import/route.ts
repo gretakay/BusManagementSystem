@@ -4,8 +4,8 @@ import { handleApiError } from "@/lib/api/handleError";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { encryptField, phoneLast4 } from "@/lib/crypto";
 import { writeAuditLog } from "@/lib/audit";
-import { importPassengersSchema } from "@/lib/validation/passenger";
-import type { ImportPassengersResult, Passenger } from "@/types/passenger";
+import { importPassengersSchema, upsertPassengerSchema } from "@/lib/validation/passenger";
+import type { ImportPassengersResult, Passenger, UpsertPassengerInput } from "@/types/passenger";
 
 const BATCH_LIMIT = 450;
 
@@ -19,25 +19,46 @@ export async function POST(req: NextRequest, { params }: { params: { tripId: str
     const user = await requireUser(req);
     requireTripSuperLead(user, params.tripId);
 
-    const { rows } = importPassengersSchema.parse(await req.json());
+    const { rows: rawRows } = importPassengersSchema.parse(await req.json());
 
     const result: ImportPassengersResult = { createdCount: 0, updatedCount: 0, errors: [] };
 
-    // 檔案內部序號重複檢查
-    const seen = new Map<string, number>();
-    rows.forEach((row, idx) => {
-      if (seen.has(row.regNo)) {
+    // 逐列驗證欄位格式,格式錯誤的列只記錄錯誤、不中斷整批匯入,其餘格式正確的列照常匯入。
+    const parsedRows: { originalRow: number; data: UpsertPassengerInput }[] = [];
+    rawRows.forEach((raw, idx) => {
+      const parsed = upsertPassengerSchema.safeParse(raw);
+      if (!parsed.success) {
+        const regNo =
+          raw && typeof raw === "object" && "regNo" in raw && typeof raw.regNo === "string"
+            ? raw.regNo
+            : undefined;
         result.errors.push({
           row: idx + 1,
-          regNo: row.regNo,
-          message: `報名序號重複出現於第 ${seen.get(row.regNo)! + 1} 列與第 ${idx + 1} 列`,
+          regNo,
+          message: parsed.error.issues.map((issue) => issue.message).join("、"),
         });
-      } else {
-        seen.set(row.regNo, idx);
+        return;
       }
+      parsedRows.push({ originalRow: idx + 1, data: parsed.data });
     });
 
-    const validRows = rows.filter((row) => !result.errors.some((e) => e.regNo === row.regNo));
+    // 檔案內部序號重複檢查
+    const seen = new Map<string, number>();
+    for (const { originalRow, data } of parsedRows) {
+      if (seen.has(data.regNo)) {
+        result.errors.push({
+          row: originalRow,
+          regNo: data.regNo,
+          message: `報名序號重複出現於第 ${seen.get(data.regNo)} 列與第 ${originalRow} 列`,
+        });
+      } else {
+        seen.set(data.regNo, originalRow);
+      }
+    }
+
+    const validRows = parsedRows
+      .filter(({ data }) => !result.errors.some((e) => e.regNo === data.regNo))
+      .map(({ data }) => data);
     if (validRows.length === 0) {
       return NextResponse.json(result, { status: 200 });
     }
