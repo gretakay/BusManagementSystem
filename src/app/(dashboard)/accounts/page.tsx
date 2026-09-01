@@ -6,10 +6,11 @@ import { apiFetch } from "@/lib/api/client";
 import type { AccountListItem } from "@/app/api/accounts/route";
 
 export default function AccountsPage() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
 
   const [accounts, setAccounts] = useState<AccountListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [togglingUid, setTogglingUid] = useState<string | null>(null);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -54,6 +55,26 @@ export default function AccountsPage() {
       setCreateError(err instanceof Error ? err.message : "建立失敗");
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function handleToggleGlobalSuperLead(acc: AccountListItem) {
+    const next = !acc.globalSuperLead;
+    const confirmMsg = next
+      ? `確定要授予 ${acc.email ?? acc.uid} 全域總負責人權限嗎?對方將可以管理所有行程與帳號。`
+      : `確定要收回 ${acc.email ?? acc.uid} 的全域總負責人權限嗎?`;
+    if (!confirm(confirmMsg)) return;
+    setTogglingUid(acc.uid);
+    try {
+      await apiFetch(`/api/accounts/${acc.uid}/role`, {
+        method: "PATCH",
+        body: JSON.stringify({ globalSuperLead: next }),
+      });
+      await loadAccounts();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "設定失敗");
+    } finally {
+      setTogglingUid(null);
     }
   }
 
@@ -164,17 +185,42 @@ export default function AccountsPage() {
           <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white">
             {accounts.map((acc) => (
               <li key={acc.uid} className="flex items-center justify-between px-4 py-3">
-                <span className="text-sm">{acc.email ?? acc.uid}</span>
-                <button
-                  onClick={() => {
-                    setResetTarget({ uid: acc.uid, email: acc.email });
-                    setResetPasswordValue("");
-                    setResetError(null);
-                  }}
-                  className="text-sm text-brand-600"
-                >
-                  重設密碼
-                </button>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">{acc.email ?? acc.uid}</span>
+                  {acc.globalSuperLead && (
+                    <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700">
+                      總負責人
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => handleToggleGlobalSuperLead(acc)}
+                    disabled={togglingUid === acc.uid || (acc.globalSuperLead && acc.uid === user?.uid)}
+                    className="text-sm text-brand-600 disabled:opacity-40"
+                    title={
+                      acc.globalSuperLead && acc.uid === user?.uid
+                        ? "無法收回自己的全域總負責人權限"
+                        : undefined
+                    }
+                  >
+                    {togglingUid === acc.uid
+                      ? "處理中…"
+                      : acc.globalSuperLead
+                        ? "收回總負責人"
+                        : "設為總負責人"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setResetTarget({ uid: acc.uid, email: acc.email });
+                      setResetPasswordValue("");
+                      setResetError(null);
+                    }}
+                    className="text-sm text-brand-600"
+                  >
+                    重設密碼
+                  </button>
+                </div>
               </li>
             ))}
           </ul>

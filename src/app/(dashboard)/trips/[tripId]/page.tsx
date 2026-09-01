@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import clsx from "clsx";
 import {
   collection,
@@ -44,6 +44,7 @@ const STATUS_STYLES: Record<AttendanceStatus, string> = {
 
 export default function TripDashboardPage() {
   const { tripId } = useParams<{ tripId: string }>();
+  const router = useRouter();
   const { role } = useAuth();
   const access = useTripAccess(tripId);
 
@@ -52,6 +53,7 @@ export default function TripDashboardPage() {
   const [rollcalls, setRollcalls] = useState<RollCall[]>([]);
   const [assignedCounts, setAssignedCounts] = useState<Record<string, number>>({});
   const [unarchiving, setUnarchiving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [rosterByBus, setRosterByBus] = useState<Record<string, PassengerListItem[]>>({});
   const [expandedBusId, setExpandedBusId] = useState<string | null>(null);
 
@@ -148,6 +150,21 @@ export default function TripDashboardPage() {
     }
   }
 
+  async function handleDelete() {
+    if (!trip) return;
+    if (!confirm(`確定要永久刪除行程「${trip.name}」嗎?車輛、點名紀錄、乘客名單都會一併刪除,無法復原。`)) {
+      return;
+    }
+    setDeleting(true);
+    try {
+      await apiFetch(`/api/trips/${tripId}`, { method: "DELETE" });
+      router.replace("/trips");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "刪除失敗");
+      setDeleting(false);
+    }
+  }
+
   if (!trip) return <p className="text-sm text-gray-400">載入中…</p>;
 
   return (
@@ -196,6 +213,15 @@ export default function TripDashboardPage() {
           <Link href={`/trips/${tripId}/seating`} className="rounded-md border border-gray-300 px-3 py-1.5">
             排車
           </Link>
+          {role?.globalSuperLead && (
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="rounded-md border border-red-300 px-3 py-1.5 text-red-600 disabled:opacity-60"
+            >
+              {deleting ? "刪除中…" : "刪除行程"}
+            </button>
+          )}
         </div>
       )}
 

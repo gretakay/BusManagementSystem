@@ -5,6 +5,7 @@ import Link from "next/link";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { apiFetch } from "@/lib/api/client";
 import { TripStatusBadge } from "@/components/trip/TripStatusBadge";
 import { isTripSuperLead } from "@/types/role";
 import type { Trip } from "@/types/trip";
@@ -13,6 +14,21 @@ export default function TripsPage() {
   const { role } = useAuth();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function handleDelete(trip: Trip) {
+    if (!confirm(`確定要永久刪除行程「${trip.name}」嗎?車輛、點名紀錄、乘客名單都會一併刪除,無法復原。`)) {
+      return;
+    }
+    setDeletingId(trip.id);
+    try {
+      await apiFetch(`/api/trips/${trip.id}`, { method: "DELETE" });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "刪除失敗");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   useEffect(() => {
     const q = query(collection(getDb(), "trips"), orderBy("date", "desc"));
@@ -61,6 +77,15 @@ export default function TripsPage() {
                   <Link href={`/trips/${trip.id}/edit`} className="text-xs text-brand-600">
                     編輯
                   </Link>
+                )}
+                {role?.globalSuperLead && (
+                  <button
+                    onClick={() => handleDelete(trip)}
+                    disabled={deletingId === trip.id}
+                    className="text-xs text-red-600 disabled:opacity-60"
+                  >
+                    {deletingId === trip.id ? "刪除中…" : "刪除"}
+                  </button>
                 )}
               </div>
             </li>

@@ -1,11 +1,13 @@
 export type AuditAction =
   | "trip.create"
+  | "trip.delete"
   | "trip.archive"
   | "trip.unarchive"
   | "bus.create"
   | "bus.assignLeader"
   | "trip.assignSuperLead"
   | "account.create"
+  | "account.setGlobalSuperLead"
   | "user.resetPassword"
   | "passenger.import"
   | "passenger.upsert"
