@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { requireUser, requireTripSuperLead } from "@/lib/auth/session";
 import { handleApiError } from "@/lib/api/handleError";
 import { getAdminDb } from "@/lib/firebase/admin";
+import { reassignBusSchema } from "@/lib/validation/passenger";
 import type { Passenger } from "@/types/passenger";
 
-const reassignBusSchema = z.object({
-  busId: z.string().trim().nullable(),
-});
-
-/** 排車「逐一調整」:變更單一人員所屬車次(superLead only)。 */
+/** 排車「逐一調整」:變更單一人員所屬車次(superLead only),依 leg 決定改 busId(去程)或 returnBusId(回程)。 */
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { tripId: string; passengerId: string } },
@@ -18,7 +14,8 @@ export async function PATCH(
     const user = await requireUser(req);
     requireTripSuperLead(user, params.tripId);
 
-    const { busId } = reassignBusSchema.parse(await req.json());
+    const { leg, busId } = reassignBusSchema.parse(await req.json());
+    const field = leg === "return" ? "returnBusId" : "busId";
     const db = getAdminDb();
     const ref = db
       .collection("trips")
@@ -30,7 +27,7 @@ export async function PATCH(
       return NextResponse.json({ error: "人員不存在" }, { status: 404 });
     }
 
-    await ref.update({ busId, updatedAt: new Date().toISOString() });
+    await ref.update({ [field]: busId, updatedAt: new Date().toISOString() });
     const updated = (await ref.get()).data() as Passenger;
     const { phoneEnc, emergencyContactPhoneEnc, ...listItem } = updated;
     return NextResponse.json(listItem);

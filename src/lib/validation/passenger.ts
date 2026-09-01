@@ -23,7 +23,19 @@ export const upsertPassengerSchema = z.object({
     .optional()
     .transform((v) => (v ? normalizeTaiwanMobile(v) : v)),
   busId: z.string().trim().nullable().optional(),
+  returnBusId: z.string().trim().nullable().optional(),
   lodgingInfo: z.string().trim().optional(),
+});
+
+export const reassignBusSchema = z.object({
+  leg: z.enum(["outbound", "return"]),
+  busId: z.string().trim().nullable(),
+});
+
+export const bulkReassignSchema = z.object({
+  passengerIds: z.array(z.string().trim().min(1)).min(1, "請至少選擇一位人員"),
+  leg: z.enum(["outbound", "return"]),
+  busId: z.string().trim().nullable(),
 });
 
 /**

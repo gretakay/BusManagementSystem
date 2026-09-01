@@ -12,11 +12,16 @@ function toListItem(p: Passenger): PassengerListItem {
   return rest;
 }
 
-/** 人員列表:superLead 可看全部;領隊/副領隊/小組長需帶 busId 且僅能查自己車輛。 */
+/**
+ * 人員列表:superLead 可看全部;領隊/副領隊/小組長需帶 busId 且僅能查自己車輛。
+ * leg=return 時依 returnBusId 篩選(回程可能換車),預設(或 leg=outbound)依 busId 篩選。
+ */
 export async function GET(req: NextRequest, { params }: { params: { tripId: string } }) {
   try {
     const user = await requireUser(req);
     const busId = req.nextUrl.searchParams.get("busId");
+    const leg = req.nextUrl.searchParams.get("leg") === "return" ? "return" : "outbound";
+    const busField = leg === "return" ? "returnBusId" : "busId";
 
     const db = getAdminDb();
     const col = db.collection("trips").doc(params.tripId).collection("passengers");
@@ -24,7 +29,7 @@ export async function GET(req: NextRequest, { params }: { params: { tripId: stri
     let query = col.orderBy("name");
     if (busId) {
       requireBusAccess(user, params.tripId, busId);
-      query = col.where("busId", "==", busId).orderBy("name") as typeof query;
+      query = col.where(busField, "==", busId).orderBy("name") as typeof query;
     } else {
       requireTripSuperLead(user, params.tripId);
     }
@@ -55,6 +60,9 @@ export async function POST(req: NextRequest, { params }: { params: { tripId: str
       id: ref.id,
       tripId: params.tripId,
       busId: input.busId ?? (existingSnap.empty ? null : (existingSnap.docs[0]!.data() as Passenger).busId),
+      returnBusId:
+        input.returnBusId ??
+        (existingSnap.empty ? null : ((existingSnap.docs[0]!.data() as Passenger).returnBusId ?? null)),
       name: input.name,
       dharmaName: input.dharmaName ?? "",
       phoneEnc: encryptField(input.phone),

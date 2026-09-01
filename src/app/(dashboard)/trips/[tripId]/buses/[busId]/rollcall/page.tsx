@@ -18,7 +18,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
 import { apiFetch } from "@/lib/api/client";
 import { QrScanner } from "@/components/rollcall/QrScanner";
-import type { PassengerContactInfo, PassengerListItem } from "@/types/passenger";
+import type { PassengerContactInfo, PassengerListItem, TripLeg } from "@/types/passenger";
 import type { AttendanceStatus, RollCall } from "@/types/rollcall";
 import type { Trip } from "@/types/trip";
 import type { PassengerLookupResult } from "@/app/api/trips/[tripId]/passengers/lookup/route";
@@ -35,6 +35,11 @@ const STATUS_STYLES: Record<AttendanceStatus, string> = {
   leave: "bg-amber-500 text-white",
 };
 
+const LEG_LABELS: Record<TripLeg, string> = {
+  outbound: "去程",
+  return: "回程",
+};
+
 export default function BusRollCallPage() {
   const { tripId, busId } = useParams<{ tripId: string; busId: string }>();
   const { user } = useAuth();
@@ -45,6 +50,7 @@ export default function BusRollCallPage() {
   const [plannedSessions, setPlannedSessions] = useState<string[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [newSessionName, setNewSessionName] = useState("");
+  const [newSessionLeg, setNewSessionLeg] = useState<TripLeg>("outbound");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<AttendanceStatus | "">("");
   const [scanning, setScanning] = useState(false);
@@ -54,12 +60,6 @@ export default function BusRollCallPage() {
     null,
   );
   const qrFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    apiFetch<PassengerListItem[]>(`/api/trips/${tripId}/passengers?busId=${busId}`)
-      .then(setRoster)
-      .catch(() => setRoster([]));
-  }, [tripId, busId]);
 
   useEffect(() => {
     const unsub = onSnapshot(doc(getDb(), "trips", tripId), (snap) => {
@@ -82,6 +82,14 @@ export default function BusRollCallPage() {
     return () => unsub();
   }, [tripId, busId]);
 
+  const currentLeg: TripLeg = rollcalls.find((r) => r.id === selectedId)?.leg ?? "outbound";
+
+  useEffect(() => {
+    apiFetch<PassengerListItem[]>(`/api/trips/${tripId}/passengers?busId=${busId}&leg=${currentLeg}`)
+      .then(setRoster)
+      .catch(() => setRoster([]));
+  }, [tripId, busId, currentLeg]);
+
   useEffect(() => {
     return () => {
       if (qrFeedbackTimer.current) clearTimeout(qrFeedbackTimer.current);
@@ -90,7 +98,7 @@ export default function BusRollCallPage() {
 
   const selected = rollcalls.find((r) => r.id === selectedId) ?? null;
 
-  async function createSession(name: string) {
+  async function createSession(name: string, leg: TripLeg) {
     if (!name || !user || creatingSession) return;
     const existing = rollcalls.find((r) => r.sessionName === name);
     if (existing) {
@@ -104,6 +112,7 @@ export default function BusRollCallPage() {
         tripId,
         busId,
         sessionName: name,
+        leg,
         createdAt: new Date().toISOString(),
         createdBy: user.uid,
         records: {},
@@ -117,7 +126,7 @@ export default function BusRollCallPage() {
   async function handleCreateSession() {
     const name = newSessionName.trim();
     if (!name) return;
-    await createSession(name);
+    await createSession(name, newSessionLeg);
     setNewSessionName("");
   }
 
@@ -149,7 +158,7 @@ export default function BusRollCallPage() {
     if (!passenger) {
       try {
         const result = await apiFetch<PassengerLookupResult>(
-          `/api/trips/${tripId}/passengers/lookup?regNo=${encodeURIComponent(regNo)}&busId=${busId}`,
+          `/api/trips/${tripId}/passengers/lookup?regNo=${encodeURIComponent(regNo)}&busId=${busId}&leg=${currentLeg}`,
         );
         if (result.found && !result.sameBus) {
           showQrFeedback({
@@ -222,12 +231,30 @@ export default function BusRollCallPage() {
       <h1 className="text-xl font-semibold">現場點名</h1>
 
       <div className="space-y-2 rounded-lg border border-gray-200 bg-white p-3">
+        {access.isSuperLead && (
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-gray-500">新場次屬於:</span>
+            {(["outbound", "return"] as TripLeg[]).map((leg) => (
+              <button
+                key={leg}
+                type="button"
+                onClick={() => setNewSessionLeg(leg)}
+                className={clsx(
+                  "rounded-full px-3 py-1",
+                  newSessionLeg === leg ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600",
+                )}
+              >
+                {LEG_LABELS[leg]}
+              </button>
+            ))}
+          </div>
+        )}
         {access.isSuperLead && pendingPlannedSessions.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {pendingPlannedSessions.map((name) => (
               <button
                 key={name}
-                onClick={() => createSession(name)}
+                onClick={() => createSession(name, newSessionLeg)}
                 disabled={creatingSession}
                 className="rounded-md bg-brand-50 px-3 py-1.5 text-sm text-brand-700 disabled:opacity-60"
               >
@@ -245,7 +272,7 @@ export default function BusRollCallPage() {
             {rollcalls.length === 0 && <option value="">尚無場次</option>}
             {rollcalls.map((r) => (
               <option key={r.id} value={r.id}>
-                {r.sessionName}
+                {r.sessionName}({LEG_LABELS[r.leg ?? "outbound"]})
               </option>
             ))}
           </select>
@@ -278,7 +305,7 @@ export default function BusRollCallPage() {
             <button
               onClick={() => setStatusFilter("")}
               className={clsx(
-                "rounded-full px-2.5 py-1",
+                "rounded-full px-3 py-1.5 text-sm",
                 statusFilter === "" ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-600",
               )}
             >
@@ -287,7 +314,7 @@ export default function BusRollCallPage() {
             <button
               onClick={() => setStatusFilter((f) => (f === "present" ? "" : "present"))}
               className={clsx(
-                "rounded-full px-2.5 py-1",
+                "rounded-full px-3 py-1.5 text-sm",
                 statusFilter === "present" ? "bg-green-600 text-white" : "bg-green-50 text-green-700",
               )}
             >
@@ -296,7 +323,7 @@ export default function BusRollCallPage() {
             <button
               onClick={() => setStatusFilter((f) => (f === "absent" ? "" : "absent"))}
               className={clsx(
-                "rounded-full px-2.5 py-1",
+                "rounded-full px-3 py-1.5 text-sm",
                 statusFilter === "absent" ? "bg-red-600 text-white" : "bg-red-50 text-red-700",
               )}
             >
@@ -305,7 +332,7 @@ export default function BusRollCallPage() {
             <button
               onClick={() => setStatusFilter((f) => (f === "leave" ? "" : "leave"))}
               className={clsx(
-                "rounded-full px-2.5 py-1",
+                "rounded-full px-3 py-1.5 text-sm",
                 statusFilter === "leave" ? "bg-amber-600 text-white" : "bg-amber-50 text-amber-700",
               )}
             >
@@ -331,11 +358,11 @@ export default function BusRollCallPage() {
               placeholder="搜尋姓名、序號或手機後四碼"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="flex-1 rounded-md border border-gray-300 px-3 py-2.5 text-base"
             />
             <button
               onClick={() => setScanning((s) => !s)}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="rounded-md border border-gray-300 px-4 py-2.5 text-base font-medium"
             >
               {scanning ? "取消掃描" : "掃描 QR"}
             </button>
@@ -349,22 +376,22 @@ export default function BusRollCallPage() {
               // 未明確點名者預設視為未到(呼應規格書「一鍵撥打未到人員電話」的即時性)。
               const effectiveStatus: AttendanceStatus = record?.status ?? "absent";
               return (
-                <li key={p.id} className="space-y-2 px-3 py-2">
-                  <div className="flex items-center justify-between">
+                <li key={p.id} className="space-y-2.5 px-3 py-3">
+                  <div className="flex items-center justify-between gap-2">
                     <div>
-                      <p className="text-sm font-medium">{p.name}</p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-base font-medium">{p.name}</p>
+                      <p className="text-sm text-gray-400">
                         {p.regNo}
                         {p.phoneLast4 && ` ・ ****${p.phoneLast4}`}
                       </p>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1.5">
                       {(["present", "absent", "leave"] as AttendanceStatus[]).map((status) => (
                         <button
                           key={status}
                           onClick={() => markStatus(p.id, status, "manual")}
                           className={clsx(
-                            "rounded-md px-2 py-1 text-xs",
+                            "rounded-md px-3 py-2 text-sm font-medium",
                             effectiveStatus === status ? STATUS_STYLES[status] : "bg-gray-100 text-gray-500",
                           )}
                         >
@@ -377,13 +404,13 @@ export default function BusRollCallPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleDial(p.id, "self")}
-                        className="rounded-md bg-blue-50 px-2 py-1 text-xs text-blue-700"
+                        className="rounded-md bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700"
                       >
                         撥打本人電話
                       </button>
                       <button
                         onClick={() => handleDial(p.id, "emergency")}
-                        className="rounded-md bg-blue-50 px-2 py-1 text-xs text-blue-700"
+                        className="rounded-md bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700"
                       >
                         撥打緊急聯絡人
                       </button>

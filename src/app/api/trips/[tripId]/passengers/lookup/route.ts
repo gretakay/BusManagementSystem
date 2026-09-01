@@ -3,7 +3,7 @@ import { requireUser, requireBusAccess } from "@/lib/auth/session";
 import { handleApiError } from "@/lib/api/handleError";
 import { getAdminDb } from "@/lib/firebase/admin";
 import type { Bus } from "@/types/bus";
-import type { Passenger } from "@/types/passenger";
+import { SELF_ARRANGED, type Passenger } from "@/types/passenger";
 
 export interface PassengerLookupResult {
   found: boolean;
@@ -22,6 +22,8 @@ export async function GET(req: NextRequest, { params }: { params: { tripId: stri
     const user = await requireUser(req);
     const regNo = req.nextUrl.searchParams.get("regNo")?.trim();
     const callerBusId = req.nextUrl.searchParams.get("busId")?.trim();
+    const leg = req.nextUrl.searchParams.get("leg") === "return" ? "return" : "outbound";
+    const busField = leg === "return" ? "returnBusId" : "busId";
     if (!regNo || !callerBusId) {
       return NextResponse.json({ error: "缺少 regNo 或 busId" }, { status: 400 });
     }
@@ -42,18 +44,21 @@ export async function GET(req: NextRequest, { params }: { params: { tripId: stri
     }
 
     const passenger = snap.docs[0]!.data() as Passenger;
-    if (passenger.busId === callerBusId) {
+    const assignedBusId = busField === "returnBusId" ? passenger.returnBusId : passenger.busId;
+    if (assignedBusId === callerBusId) {
       const result: PassengerLookupResult = { found: true, sameBus: true, name: passenger.name };
       return NextResponse.json(result);
     }
 
     let busNumber: string | null = null;
-    if (passenger.busId) {
+    if (assignedBusId === SELF_ARRANGED) {
+      busNumber = "自行前往(不搭遊覽車)";
+    } else if (assignedBusId) {
       const busSnap = await db
         .collection("trips")
         .doc(params.tripId)
         .collection("buses")
-        .doc(passenger.busId)
+        .doc(assignedBusId)
         .get();
       busNumber = busSnap.exists ? (busSnap.data() as Bus).busNumber : null;
     }

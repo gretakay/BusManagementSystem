@@ -9,6 +9,14 @@
       ]
     },
     {
+      "collectionGroup": "passengers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "returnBusId", "order": "ASCENDING" },
+        { "fieldPath": "name", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "rollcalls",
       "queryScope": "COLLECTION",
       "fields": [

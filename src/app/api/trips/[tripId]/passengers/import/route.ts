@@ -80,6 +80,7 @@ export async function POST(req: NextRequest, { params }: { params: { tripId: str
           id: ref.id,
           tripId: params.tripId,
           busId: row.busId ?? existing?.busId ?? null,
+          returnBusId: row.returnBusId ?? existing?.returnBusId ?? null,
           name: row.name,
           dharmaName: row.dharmaName ?? "",
           phoneEnc: encryptField(row.phone),

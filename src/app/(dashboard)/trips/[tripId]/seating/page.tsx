@@ -8,12 +8,18 @@ import { getDb } from "@/lib/firebase/client";
 import { apiFetch } from "@/lib/api/client";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
 import type { Bus } from "@/types/bus";
-import type { PassengerListItem } from "@/types/passenger";
+import { SELF_ARRANGED, type PassengerListItem, type TripLeg } from "@/types/passenger";
 
 const UNASSIGNED = "__unassigned__";
 
+const LEG_LABELS: Record<TripLeg, string> = {
+  outbound: "去程",
+  return: "回程",
+};
+
 /**
- * 排車頁面(MVP):篩選分頁(全部/尚未分配/各車)+ 逐一調整 + 勾選多筆批次指派 + 排車總覽。
+ * 排車頁面(MVP):去程/回程各自獨立排車(可能搭不同車,或其中一段自行開車)+
+ * 篩選分頁(全部/尚未分配/自行前往/各車)+ 逐一調整 + 勾選多筆批次指派 + 排車總覽。
  * 拖曳介面與批次條件分派(依身分別/組別)為 Phase 2 TODO(規格書 §5.2.1 方式二、三)。
  */
 export default function SeatingPage() {
@@ -22,11 +28,14 @@ export default function SeatingPage() {
   const [buses, setBuses] = useState<Bus[]>([]);
   const [passengers, setPassengers] = useState<PassengerListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [leg, setLeg] = useState<TripLeg>("outbound");
   const [filter, setFilter] = useState<string>("");
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkTargetBusId, setBulkTargetBusId] = useState("");
   const [bulkApplying, setBulkApplying] = useState(false);
+
+  const busIdField = leg === "return" ? "returnBusId" : "busId";
 
   useEffect(() => {
     const q = query(collection(getDb(), "trips", tripId, "buses"), orderBy("busNumber"));
@@ -49,22 +58,32 @@ export default function SeatingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripId]);
 
+  // 切換去程/回程時,先前的篩選/選取條件通常不再有意義,重置避免誤操作到另一段的資料。
+  useEffect(() => {
+    setFilter("");
+    setSelectedIds(new Set());
+    setBulkTargetBusId("");
+  }, [leg]);
+
   const counts = useMemo(() => {
     const map = new Map<string, number>();
     let unassigned = 0;
+    let selfArranged = 0;
     for (const p of passengers) {
-      if (p.busId) map.set(p.busId, (map.get(p.busId) ?? 0) + 1);
+      const busId = p[busIdField];
+      if (busId === SELF_ARRANGED) selfArranged += 1;
+      else if (busId) map.set(busId, (map.get(busId) ?? 0) + 1);
       else unassigned += 1;
     }
-    return { byBus: map, unassigned };
-  }, [passengers]);
+    return { byBus: map, unassigned, selfArranged };
+  }, [passengers, busIdField]);
 
   async function handleReassign(passengerId: string, busId: string) {
     const nextBusId = busId === "" ? null : busId;
     try {
       const updated = await apiFetch<PassengerListItem>(
         `/api/trips/${tripId}/passengers/${passengerId}`,
-        { method: "PATCH", body: JSON.stringify({ busId: nextBusId }) },
+        { method: "PATCH", body: JSON.stringify({ leg, busId: nextBusId }) },
       );
       setPassengers((prev) => prev.map((p) => (p.id === passengerId ? updated : p)));
     } catch (err) {
@@ -73,8 +92,10 @@ export default function SeatingPage() {
   }
 
   const filteredPassengers = passengers.filter((p) => {
-    if (filter === UNASSIGNED && p.busId) return false;
-    if (filter && filter !== UNASSIGNED && p.busId !== filter) return false;
+    const busId = p[busIdField];
+    if (filter === UNASSIGNED && busId) return false;
+    if (filter === SELF_ARRANGED && busId !== SELF_ARRANGED) return false;
+    if (filter && filter !== UNASSIGNED && filter !== SELF_ARRANGED && busId !== filter) return false;
     if (search && !p.name.includes(search) && !p.regNo.includes(search)) return false;
     return true;
   });
@@ -110,10 +131,12 @@ export default function SeatingPage() {
     try {
       await apiFetch(`/api/trips/${tripId}/passengers/bulk-reassign`, {
         method: "POST",
-        body: JSON.stringify({ passengerIds: ids, busId: nextBusId }),
+        body: JSON.stringify({ passengerIds: ids, leg, busId: nextBusId }),
       });
       const idSet = new Set(ids);
-      setPassengers((prev) => prev.map((p) => (idSet.has(p.id) ? { ...p, busId: nextBusId } : p)));
+      setPassengers((prev) =>
+        prev.map((p) => (idSet.has(p.id) ? { ...p, [busIdField]: nextBusId } : p)),
+      );
       setSelectedIds(new Set());
     } catch (err) {
       alert(err instanceof Error ? err.message : "批次指派失敗");
@@ -130,8 +153,26 @@ export default function SeatingPage() {
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">排車</h1>
 
+      <div className="flex items-center gap-2">
+        {(["outbound", "return"] as TripLeg[]).map((l) => (
+          <button
+            key={l}
+            onClick={() => setLeg(l)}
+            className={clsx(
+              "rounded-full px-4 py-1.5 text-sm font-medium",
+              leg === l ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600",
+            )}
+          >
+            {LEG_LABELS[l]}
+          </button>
+        ))}
+        <span className="text-xs text-gray-400">
+          去程/回程各自獨立排車,可能搭不同車,調整前請確認上面選的是哪一段
+        </span>
+      </div>
+
       <div className="space-y-2">
-        <h2 className="text-sm font-medium text-gray-500">排車總覽</h2>
+        <h2 className="text-sm font-medium text-gray-500">{LEG_LABELS[leg]}排車總覽</h2>
         <ul className="grid gap-2 sm:grid-cols-3">
           {buses.map((bus) => {
             const assigned = counts.byBus.get(bus.id) ?? 0;
@@ -155,12 +196,16 @@ export default function SeatingPage() {
             <p className="font-medium">尚未分配</p>
             <p className="text-gray-500">{counts.unassigned} 人</p>
           </li>
+          <li className="rounded-lg border border-gray-200 bg-white p-3 text-sm">
+            <p className="font-medium">自行前往</p>
+            <p className="text-gray-500">{counts.selfArranged} 人</p>
+          </li>
         </ul>
       </div>
 
       <div className="rounded-lg border border-gray-200 bg-white">
         <div className="space-y-3 border-b border-gray-100 p-4">
-          <h2 className="text-sm font-medium text-gray-500">人員車次調整</h2>
+          <h2 className="text-sm font-medium text-gray-500">人員車次調整({LEG_LABELS[leg]})</h2>
 
           <div className="flex flex-wrap gap-2 text-xs">
             <button
@@ -180,6 +225,15 @@ export default function SeatingPage() {
               )}
             >
               尚未分配({counts.unassigned})
+            </button>
+            <button
+              onClick={() => setFilter(SELF_ARRANGED)}
+              className={clsx(
+                "rounded-full px-3 py-1",
+                filter === SELF_ARRANGED ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600",
+              )}
+            >
+              自行前往({counts.selfArranged})
             </button>
             {buses.map((bus) => (
               <button
@@ -211,6 +265,7 @@ export default function SeatingPage() {
                 className="rounded-md border border-gray-300 px-2 py-1 text-sm"
               >
                 <option value="">未分配</option>
+                <option value={SELF_ARRANGED}>自行前往(不搭車)</option>
                 {buses.map((bus) => (
                   <option key={bus.id} value={bus.id}>
                     {bus.busNumber}
@@ -262,11 +317,12 @@ export default function SeatingPage() {
                   </span>
                 </label>
                 <select
-                  value={p.busId ?? ""}
+                  value={p[busIdField] ?? ""}
                   onChange={(e) => handleReassign(p.id, e.target.value)}
                   className="rounded-md border border-gray-300 px-2 py-1 text-sm"
                 >
                   <option value="">未分配</option>
+                  <option value={SELF_ARRANGED}>自行前往(不搭車)</option>
                   {buses.map((bus) => (
                     <option key={bus.id} value={bus.id}>
                       {bus.busNumber}

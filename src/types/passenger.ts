@@ -1,5 +1,11 @@
 export type PassengerIdentity = "guest" | "believer" | "volunteer";
 
+/** 行程分兩段,去程/回程可能搭不同車(或其中一段自行開車、不搭乘遊覽車)。 */
+export type TripLeg = "outbound" | "return";
+
+/** busId / returnBusId 的特殊值:此人該段行程自行開車前往,不搭乘任何遊覽車。 */
+export const SELF_ARRANGED = "__self__";
+
 /**
  * 人員資料。phone / emergencyContactPhone 在資料庫中是加密字串,
  * 前端一般讀取的是 PassengerListItem(不含明碼電話),
@@ -8,7 +14,10 @@ export type PassengerIdentity = "guest" | "believer" | "volunteer";
 export interface Passenger {
   id: string;
   tripId: string;
+  /** 去程車次;null 表示尚未分配,SELF_ARRANGED 表示自行開車 */
   busId: string | null;
+  /** 回程車次,與 busId 各自獨立(預設也是 null,需另外分配,不會自動跟去程一樣) */
+  returnBusId: string | null;
   name: string;
   dharmaName?: string;
   /** 加密後密文,不應直接顯示於畫面 */
@@ -47,6 +56,7 @@ export interface UpsertPassengerInput {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   busId?: string | null;
+  returnBusId?: string | null;
   lodgingInfo?: string;
 }
 
