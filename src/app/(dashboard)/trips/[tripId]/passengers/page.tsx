@@ -197,7 +197,13 @@ export default function PassengersPage() {
           }}
           className="mt-3 text-sm"
         />
-        {importResult && (
+        {importing && (
+          <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-brand-600" />
+            匯入中,請稍候…(人數較多時可能需要幾十秒)
+          </div>
+        )}
+        {!importing && importResult && (
           <div className="mt-3 text-sm">
             <p>
               新增 {importResult.createdCount} 筆、更新 {importResult.updatedCount} 筆
