@@ -15,6 +15,7 @@ import {
 } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { useTripAccess } from "@/lib/auth/useTripAccess";
 import { apiFetch } from "@/lib/api/client";
 import { QrScanner } from "@/components/rollcall/QrScanner";
 import type { PassengerContactInfo, PassengerListItem } from "@/types/passenger";
@@ -36,6 +37,7 @@ const STATUS_STYLES: Record<AttendanceStatus, string> = {
 export default function BusRollCallPage() {
   const { tripId, busId } = useParams<{ tripId: string; busId: string }>();
   const { user } = useAuth();
+  const access = useTripAccess(tripId);
 
   const [roster, setRoster] = useState<PassengerListItem[]>([]);
   const [rollcalls, setRollcalls] = useState<RollCall[]>([]);
@@ -91,6 +93,7 @@ export default function BusRollCallPage() {
       setSelectedId(existing.id);
       return;
     }
+    if (!access.isSuperLead) return;
     setCreatingSession(true);
     try {
       const ref = await addDoc(collection(getDb(), "trips", tripId, "rollcalls"), {
@@ -169,15 +172,14 @@ export default function BusRollCallPage() {
   const summary = useMemo(() => {
     if (!selected) return null;
     let present = 0;
-    let absent = 0;
     let leave = 0;
     for (const p of roster) {
       const status = selected.records[p.id]?.status;
       if (status === "present") present += 1;
-      else if (status === "absent") absent += 1;
       else if (status === "leave") leave += 1;
     }
-    return { total: roster.length, present, absent, leave, unmarked: roster.length - present - absent - leave };
+    // 未明確點名者預設視為未到,不再另外算「未報到」,對齊規格書的三種狀態設計。
+    return { total: roster.length, present, absent: roster.length - present - leave, leave };
   }, [roster, selected]);
 
   const filteredRoster = roster.filter(
@@ -192,7 +194,7 @@ export default function BusRollCallPage() {
       <h1 className="text-xl font-semibold">現場點名</h1>
 
       <div className="space-y-2 rounded-lg border border-gray-200 bg-white p-3">
-        {pendingPlannedSessions.length > 0 && (
+        {access.isSuperLead && pendingPlannedSessions.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {pendingPlannedSessions.map((name) => (
               <button
@@ -220,24 +222,28 @@ export default function BusRollCallPage() {
             ))}
           </select>
         </div>
-        <div className="flex items-center gap-2">
-          <input
-            placeholder="其他自訂場次名稱(規劃外)"
-            value={newSessionName}
-            onChange={(e) => setNewSessionName(e.target.value)}
-            className="flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
-          />
-          <button
-            onClick={handleCreateSession}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
-          >
-            開新場次
-          </button>
-        </div>
+        {access.isSuperLead && (
+          <div className="flex items-center gap-2">
+            <input
+              placeholder="其他自訂場次名稱(規劃外)"
+              value={newSessionName}
+              onChange={(e) => setNewSessionName(e.target.value)}
+              className="flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+            />
+            <button
+              onClick={handleCreateSession}
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+            >
+              開新場次
+            </button>
+          </div>
+        )}
       </div>
 
       {!selected || !summary ? (
-        <p className="text-sm text-gray-400">請先建立一個點名場次。</p>
+        <p className="text-sm text-gray-400">
+          {access.isSuperLead ? "請先建立一個點名場次。" : "尚無點名場次,請聯絡總領隊建立場次。"}
+        </p>
       ) : (
         <>
           <div className="flex flex-wrap gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
@@ -245,7 +251,6 @@ export default function BusRollCallPage() {
             <span className="text-green-700">已到 {summary.present}</span>
             <span className="text-red-600">未到 {summary.absent}</span>
             <span className="text-amber-600">請假 {summary.leave}</span>
-            <span className="font-medium text-gray-700">尚有 {summary.unmarked} 人未報到</span>
           </div>
 
           {qrFeedback && (
@@ -274,6 +279,8 @@ export default function BusRollCallPage() {
           <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
             {filteredRoster.map((p) => {
               const record = selected.records[p.id];
+              // 未明確點名者預設視為未到(呼應規格書「一鍵撥打未到人員電話」的即時性)。
+              const effectiveStatus: AttendanceStatus = record?.status ?? "absent";
               return (
                 <li key={p.id} className="space-y-2 px-3 py-2">
                   <div className="flex items-center justify-between">
@@ -283,7 +290,6 @@ export default function BusRollCallPage() {
                         {p.regNo}
                         {p.phoneLast4 && ` ・ ****${p.phoneLast4}`}
                       </p>
-                      {!record && <p className="text-xs text-gray-400">未報到</p>}
                     </div>
                     <div className="flex gap-1">
                       {(["present", "absent", "leave"] as AttendanceStatus[]).map((status) => (
@@ -292,7 +298,7 @@ export default function BusRollCallPage() {
                           onClick={() => markStatus(p.id, status, "manual")}
                           className={clsx(
                             "rounded-md px-2 py-1 text-xs",
-                            record?.status === status ? STATUS_STYLES[status] : "bg-gray-100 text-gray-500",
+                            effectiveStatus === status ? STATUS_STYLES[status] : "bg-gray-100 text-gray-500",
                           )}
                         >
                           {STATUS_LABELS[status]}
@@ -300,7 +306,7 @@ export default function BusRollCallPage() {
                       ))}
                     </div>
                   </div>
-                  {record?.status === "absent" && (
+                  {effectiveStatus === "absent" && (
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleDial(p.id, "self")}

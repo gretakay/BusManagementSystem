@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { apiFetch } from "@/lib/api/client";
 import { TripStatusBadge } from "@/components/trip/TripStatusBadge";
 import { DeleteTripDialog } from "@/components/trip/DeleteTripDialog";
-import { isTripSuperLead } from "@/types/role";
+import { isTripSuperLead, hasTripAssignment, tripRoleSummary } from "@/types/role";
 import type { Trip } from "@/types/trip";
 
 export default function TripsPage() {
@@ -44,6 +44,10 @@ export default function TripsPage() {
     return () => unsub();
   }, []);
 
+  const visibleTrips = role?.globalSuperLead
+    ? trips
+    : trips.filter((trip) => hasTripAssignment(role, trip.id));
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -60,17 +64,20 @@ export default function TripsPage() {
 
       {loading ? (
         <p className="text-sm text-gray-400">載入中…</p>
-      ) : trips.length === 0 ? (
+      ) : visibleTrips.length === 0 ? (
         <p className="text-sm text-gray-400">尚無可查看的行程。</p>
       ) : (
         <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white">
-          {trips.map((trip) => (
+          {visibleTrips.map((trip) => (
             <li key={trip.id} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50">
               <Link href={`/trips/${trip.id}`} className="flex-1">
                 <p className="font-medium">{trip.name}</p>
                 <p className="text-xs text-gray-400">
                   {trip.date} ・ {trip.busCount} 台車
                 </p>
+                {!role?.globalSuperLead && (
+                  <p className="text-xs text-brand-700">你的身分:{tripRoleSummary(role, trip.id)}</p>
+                )}
               </Link>
               <div className="flex items-center gap-3">
                 <TripStatusBadge status={trip.status} />

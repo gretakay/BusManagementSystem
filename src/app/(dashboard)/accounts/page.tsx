@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { apiFetch } from "@/lib/api/client";
 import type { AccountListItem } from "@/app/api/accounts/route";
+import type { GlobalSuperLeadTitle } from "@/types/role";
 
 export default function AccountsPage() {
   const { role, user } = useAuth();
@@ -58,17 +59,30 @@ export default function AccountsPage() {
     }
   }
 
-  async function handleToggleGlobalSuperLead(acc: AccountListItem) {
-    const next = !acc.globalSuperLead;
-    const confirmMsg = next
-      ? `確定要授予 ${acc.email ?? acc.uid} 全域總負責人權限嗎?對方將可以管理所有行程與帳號。`
-      : `確定要收回 ${acc.email ?? acc.uid} 的全域總負責人權限嗎?`;
+  async function handleGrantGlobalRole(acc: AccountListItem, title: GlobalSuperLeadTitle) {
+    const confirmMsg = `確定要授予 ${acc.email ?? acc.uid}「${title}」權限嗎?權限等同於總負責人,可以管理所有行程與帳號,只是顯示頭銜不同。`;
     if (!confirm(confirmMsg)) return;
     setTogglingUid(acc.uid);
     try {
       await apiFetch(`/api/accounts/${acc.uid}/role`, {
         method: "PATCH",
-        body: JSON.stringify({ globalSuperLead: next }),
+        body: JSON.stringify({ globalSuperLead: true, title }),
+      });
+      await loadAccounts();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "設定失敗");
+    } finally {
+      setTogglingUid(null);
+    }
+  }
+
+  async function handleRevokeGlobalRole(acc: AccountListItem) {
+    if (!confirm(`確定要收回 ${acc.email ?? acc.uid} 的${acc.globalSuperLeadTitle ?? "總負責人"}權限嗎?`)) return;
+    setTogglingUid(acc.uid);
+    try {
+      await apiFetch(`/api/accounts/${acc.uid}/role`, {
+        method: "PATCH",
+        body: JSON.stringify({ globalSuperLead: false }),
       });
       await loadAccounts();
     } catch (err) {
@@ -189,27 +203,38 @@ export default function AccountsPage() {
                   <span className="text-sm">{acc.email ?? acc.uid}</span>
                   {acc.globalSuperLead && (
                     <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700">
-                      總負責人
+                      {acc.globalSuperLeadTitle ?? "總負責人"}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => handleToggleGlobalSuperLead(acc)}
-                    disabled={togglingUid === acc.uid || (acc.globalSuperLead && acc.uid === user?.uid)}
-                    className="text-sm text-brand-600 disabled:opacity-40"
-                    title={
-                      acc.globalSuperLead && acc.uid === user?.uid
-                        ? "無法收回自己的全域總負責人權限"
-                        : undefined
-                    }
-                  >
-                    {togglingUid === acc.uid
-                      ? "處理中…"
-                      : acc.globalSuperLead
-                        ? "收回總負責人"
-                        : "設為總負責人"}
-                  </button>
+                  {acc.globalSuperLead ? (
+                    <button
+                      onClick={() => handleRevokeGlobalRole(acc)}
+                      disabled={togglingUid === acc.uid || acc.uid === user?.uid}
+                      className="text-sm text-brand-600 disabled:opacity-40"
+                      title={acc.uid === user?.uid ? "無法收回自己的權限" : undefined}
+                    >
+                      {togglingUid === acc.uid ? "處理中…" : "收回權限"}
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => handleGrantGlobalRole(acc, "總負責人")}
+                        disabled={togglingUid === acc.uid}
+                        className="text-sm text-brand-600 disabled:opacity-40"
+                      >
+                        設為總負責人
+                      </button>
+                      <button
+                        onClick={() => handleGrantGlobalRole(acc, "法師")}
+                        disabled={togglingUid === acc.uid}
+                        className="text-sm text-brand-600 disabled:opacity-40"
+                      >
+                        設為法師
+                      </button>
+                    </>
+                  )}
                   <button
                     onClick={() => {
                       setResetTarget({ uid: acc.uid, email: acc.email });

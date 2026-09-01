@@ -4,13 +4,14 @@ import { handleApiError } from "@/lib/api/handleError";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 import { writeAuditLog } from "@/lib/audit";
 import { createAccountSchema } from "@/lib/validation/account";
-import type { UserRoleDoc } from "@/types/role";
+import { globalSuperLeadLabel, type GlobalSuperLeadTitle, type UserRoleDoc } from "@/types/role";
 
 export interface AccountListItem {
   uid: string;
   email: string | null;
   createdAt: string;
   globalSuperLead: boolean;
+  globalSuperLeadTitle: GlobalSuperLeadTitle | null;
 }
 
 /** 帳號管理:不綁定特定行程,獨立建立/列出登入帳號,僅全域總負責人可用。 */
@@ -31,13 +32,16 @@ export async function GET(req: NextRequest) {
     } while (pageToken);
 
     const rolesSnap = await getAdminDb().collection("roles").get();
-    const globalSuperLeadUids = new Set(
-      rolesSnap.docs.filter((d) => (d.data() as UserRoleDoc).globalSuperLead).map((d) => d.id),
-    );
+    const globalSuperLeadTitles = new Map<string, GlobalSuperLeadTitle>();
+    for (const d of rolesSnap.docs) {
+      const data = d.data() as UserRoleDoc;
+      if (data.globalSuperLead) globalSuperLeadTitles.set(d.id, globalSuperLeadLabel(data));
+    }
 
     const accounts: AccountListItem[] = authUsers.map((u) => ({
       ...u,
-      globalSuperLead: globalSuperLeadUids.has(u.uid),
+      globalSuperLead: globalSuperLeadTitles.has(u.uid),
+      globalSuperLeadTitle: globalSuperLeadTitles.get(u.uid) ?? null,
     }));
 
     accounts.sort((a, b) => (a.email ?? "").localeCompare(b.email ?? ""));
@@ -74,6 +78,7 @@ export async function POST(req: NextRequest) {
       email: created.email ?? email,
       createdAt: created.metadata.creationTime,
       globalSuperLead: false,
+      globalSuperLeadTitle: null,
     };
     return NextResponse.json(account, { status: 201 });
   } catch (error) {

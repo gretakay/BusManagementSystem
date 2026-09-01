@@ -23,7 +23,7 @@ import type { Trip } from "@/types/trip";
 import type { Bus } from "@/types/bus";
 import type { PassengerListItem } from "@/types/passenger";
 import type { AttendanceStatus, RollCall } from "@/types/rollcall";
-import type { BusRole } from "@/types/role";
+import { globalSuperLeadLabel, type BusRole } from "@/types/role";
 
 const BUS_ROLE_LABELS: Record<BusRole, string> = {
   leader: "領隊",
@@ -113,7 +113,7 @@ export default function TripDashboardPage() {
     : buses.filter((b) => access.canAccessBus(b.id));
 
   const identityLabel = useMemo(() => {
-    if (role?.globalSuperLead) return "總負責人(全域)";
+    if (role?.globalSuperLead) return `${globalSuperLeadLabel(role)}(全域)`;
     if ((trip?.superLeads ?? []).some((s) => s.uid === access.uid)) return "此行程總領隊";
     const busRoles = role?.trips?.[tripId]?.busRoles ?? {};
     const parts = Object.entries(busRoles).map(([busId, busRole]) => {

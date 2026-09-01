@@ -70,7 +70,8 @@ service cloud.firestore {
       match /rollcalls/{rollcallId} {
         allow read: if isTripSuperLead(tripId) || canAccessBus(tripId, resource.data.busId);
 
-        allow create: if (isTripSuperLead(tripId) || canAccessBus(tripId, request.resource.data.busId))
+        // 只有總負責人/該行程總領隊能「開新場次」(建立點名場次紀錄);一般車輛領隊只能在既有場次內點名(見下方 update)。
+        allow create: if isTripSuperLead(tripId)
           && tripStatus(tripId) != 'archived'
           && request.resource.data.createdBy == request.auth.uid
           && request.resource.data.tripId == tripId;

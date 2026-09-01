@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { globalSuperLeadLabel } from "@/types/role";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, role, loading, signOut } = useAuth();
@@ -33,7 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span>{user.email}</span>
             {role?.globalSuperLead && (
               <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700">
-                總負責人
+                {globalSuperLeadLabel(role)}
               </span>
             )}
             <button onClick={() => signOut()} className="text-gray-400 hover:text-gray-700">
