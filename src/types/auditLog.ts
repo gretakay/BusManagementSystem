@@ -5,6 +5,7 @@ export type AuditAction =
   | "bus.create"
   | "bus.assignLeader"
   | "trip.assignSuperLead"
+  | "account.create"
   | "user.resetPassword"
   | "passenger.import"
   | "passenger.upsert"

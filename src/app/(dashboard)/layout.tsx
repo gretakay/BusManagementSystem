@@ -25,6 +25,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             遊覽車點名系統
           </Link>
           <div className="flex items-center gap-3 text-sm text-gray-600">
+            {role?.globalSuperLead && (
+              <Link href="/accounts" className="text-brand-600">
+                帳號管理
+              </Link>
+            )}
             <span>{user.email}</span>
             {role?.globalSuperLead && (
               <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700">
