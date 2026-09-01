@@ -94,6 +94,20 @@ export default function PassengersPage() {
     }
   }
 
+  function handleDownloadTemplate() {
+    const headers = Object.keys(HEADER_MAP);
+    const sampleRows = [
+      ["0001", "王小明", "法明", "0912345678", "信眾", "", "王大明", "0987654321", "A棟101"],
+      ["0002", "陳小華", "", "0922333444", "義工", "香積組", "陳大華", "0933222111", "B棟205"],
+      ["0003", "林小芳", "", "0955666777", "貴賓", "", "", "", ""],
+    ];
+    const sheet = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
+    sheet["!cols"] = headers.map((h) => ({ wch: Math.max(h.length * 2, 12) }));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, "人員名單");
+    XLSX.writeFile(workbook, "人員匯入範例.xlsx");
+  }
+
   async function handleImportFile(file: File) {
     setImporting(true);
     setImportResult(null);
@@ -141,7 +155,16 @@ export default function PassengersPage() {
       <h1 className="text-xl font-semibold">人員管理</h1>
 
       <div className="rounded-lg border border-gray-200 bg-white p-4">
-        <h2 className="text-sm font-medium text-gray-500">批次匯入(Excel/CSV)</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-medium text-gray-500">批次匯入(Excel/CSV)</h2>
+          <button
+            type="button"
+            onClick={handleDownloadTemplate}
+            className="rounded-md border border-gray-300 px-3 py-1.5 text-xs text-brand-600"
+          >
+            下載範例檔
+          </button>
+        </div>
         <p className="mt-1 text-xs text-gray-400">
           表頭需包含:報名序號、姓名、法名、手機號碼、身分別(貴賓/信眾/義工)、義工組別、緊急聯絡人姓名、緊急聯絡人電話。
           以報名序號比對,重新匯入同一份檔案會更新既有資料(Upsert),不會清空重建。
