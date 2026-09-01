@@ -1,11 +1,9 @@
-/**
- * Phase 2 功能(規格書 §5.4 廣播訊息):目前僅定義型別與 Firestore 集合位置,
- * 尚未實作 UI 與 API route。
- */
+/** 規格書 §5.4:總領隊/師父對所有領隊廣播訊息(例如集合地點異動、天候通知)。 */
 export interface Broadcast {
   id: string;
   tripId: string;
   message: string;
   createdBy: string;
+  createdByEmail?: string | null;
   createdAt: string;
 }

@@ -11,6 +11,7 @@ import { useTripAccess } from "@/lib/auth/useTripAccess";
 import { apiFetch } from "@/lib/api/client";
 import { TripStatusBadge } from "@/components/trip/TripStatusBadge";
 import { DeleteTripDialog } from "@/components/trip/DeleteTripDialog";
+import { BroadcastPanel } from "@/components/trip/BroadcastPanel";
 import { tripRoleSummary } from "@/types/role";
 import type { Trip } from "@/types/trip";
 
@@ -132,6 +133,8 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
           )}
         </nav>
       )}
+
+      <BroadcastPanel tripId={tripId} canSend={access.isSuperLead} />
 
       {children}
 

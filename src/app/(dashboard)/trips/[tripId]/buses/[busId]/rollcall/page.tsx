@@ -21,6 +21,7 @@ import { QrScanner } from "@/components/rollcall/QrScanner";
 import type { PassengerContactInfo, PassengerListItem } from "@/types/passenger";
 import type { AttendanceStatus, RollCall } from "@/types/rollcall";
 import type { Trip } from "@/types/trip";
+import type { PassengerLookupResult } from "@/app/api/trips/[tripId]/passengers/lookup/route";
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
   present: "已到",
@@ -45,10 +46,13 @@ export default function BusRollCallPage() {
   const [selectedId, setSelectedId] = useState<string>("");
   const [newSessionName, setNewSessionName] = useState("");
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<AttendanceStatus | "">("");
   const [scanning, setScanning] = useState(false);
   const [creatingSession, setCreatingSession] = useState(false);
   const [contactCache, setContactCache] = useState<Record<string, PassengerContactInfo>>({});
-  const [qrFeedback, setQrFeedback] = useState<string | null>(null);
+  const [qrFeedback, setQrFeedback] = useState<{ type: "success" | "error"; message: string } | null>(
+    null,
+  );
   const qrFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -133,17 +137,35 @@ export default function BusRollCallPage() {
     });
   }
 
+  function showQrFeedback(feedback: { type: "success" | "error"; message: string }) {
+    if (qrFeedbackTimer.current) clearTimeout(qrFeedbackTimer.current);
+    setQrFeedback(feedback);
+    qrFeedbackTimer.current = setTimeout(() => setQrFeedback(null), 2500);
+  }
+
   async function handleQrDecode(text: string) {
     const regNo = text.trim();
     const passenger = roster.find((p) => p.regNo === regNo);
     if (!passenger) {
-      alert(`找不到報名序號「${regNo}」對應的本車人員`);
+      try {
+        const result = await apiFetch<PassengerLookupResult>(
+          `/api/trips/${tripId}/passengers/lookup?regNo=${encodeURIComponent(regNo)}&busId=${busId}`,
+        );
+        if (result.found && !result.sameBus) {
+          showQrFeedback({
+            type: "error",
+            message: `${result.name ?? regNo} 不是本車人員,屬於「${result.busNumber ?? "其他車次"}」`,
+          });
+        } else {
+          showQrFeedback({ type: "error", message: `查無報名序號「${regNo}」` });
+        }
+      } catch {
+        showQrFeedback({ type: "error", message: `查無報名序號「${regNo}」` });
+      }
       return;
     }
     await markStatus(passenger.id, "present", "qr");
-    if (qrFeedbackTimer.current) clearTimeout(qrFeedbackTimer.current);
-    setQrFeedback(`${passenger.name} 報到成功`);
-    qrFeedbackTimer.current = setTimeout(() => setQrFeedback(null), 2000);
+    showQrFeedback({ type: "success", message: `${passenger.name} 報到成功` });
   }
 
   async function loadContact(passengerId: string): Promise<PassengerContactInfo> {
@@ -182,12 +204,18 @@ export default function BusRollCallPage() {
     return { total: roster.length, present, absent: roster.length - present - leave, leave };
   }, [roster, selected]);
 
-  const filteredRoster = roster.filter(
-    (p) =>
+  const filteredRoster = roster.filter((p) => {
+    const matchesSearch =
       p.name.includes(search) ||
       p.regNo.includes(search) ||
-      (search.length > 0 && p.phoneLast4.includes(search)),
-  );
+      (search.length > 0 && p.phoneLast4.includes(search));
+    if (!matchesSearch) return false;
+    if (statusFilter) {
+      const effectiveStatus: AttendanceStatus = selected?.records[p.id]?.status ?? "absent";
+      if (effectiveStatus !== statusFilter) return false;
+    }
+    return true;
+  });
 
   return (
     <div className="space-y-4 pb-24">
@@ -246,16 +274,55 @@ export default function BusRollCallPage() {
         </p>
       ) : (
         <>
-          <div className="flex flex-wrap gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
-            <span>共 {summary.total} 人</span>
-            <span className="text-green-700">已到 {summary.present}</span>
-            <span className="text-red-600">未到 {summary.absent}</span>
-            <span className="text-amber-600">請假 {summary.leave}</span>
+          <div className="flex flex-wrap gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
+            <button
+              onClick={() => setStatusFilter("")}
+              className={clsx(
+                "rounded-full px-2.5 py-1",
+                statusFilter === "" ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-600",
+              )}
+            >
+              共 {summary.total} 人
+            </button>
+            <button
+              onClick={() => setStatusFilter((f) => (f === "present" ? "" : "present"))}
+              className={clsx(
+                "rounded-full px-2.5 py-1",
+                statusFilter === "present" ? "bg-green-600 text-white" : "bg-green-50 text-green-700",
+              )}
+            >
+              已到 {summary.present}
+            </button>
+            <button
+              onClick={() => setStatusFilter((f) => (f === "absent" ? "" : "absent"))}
+              className={clsx(
+                "rounded-full px-2.5 py-1",
+                statusFilter === "absent" ? "bg-red-600 text-white" : "bg-red-50 text-red-700",
+              )}
+            >
+              未到 {summary.absent}
+            </button>
+            <button
+              onClick={() => setStatusFilter((f) => (f === "leave" ? "" : "leave"))}
+              className={clsx(
+                "rounded-full px-2.5 py-1",
+                statusFilter === "leave" ? "bg-amber-600 text-white" : "bg-amber-50 text-amber-700",
+              )}
+            >
+              請假 {summary.leave}
+            </button>
           </div>
 
           {qrFeedback && (
-            <div className="rounded-md bg-green-50 px-3 py-2 text-sm font-medium text-green-700">
-              ✓ {qrFeedback}
+            <div
+              className={clsx(
+                "rounded-lg border-2 px-4 py-3 text-center text-lg font-bold shadow-sm",
+                qrFeedback.type === "success"
+                  ? "border-green-400 bg-green-100 text-green-800"
+                  : "border-red-400 bg-red-100 text-red-800",
+              )}
+            >
+              {qrFeedback.type === "success" ? "✓" : "✕"} {qrFeedback.message}
             </div>
           )}
 

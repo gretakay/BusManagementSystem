@@ -106,14 +106,14 @@ export default function SeatingPage() {
     if (selectedIds.size === 0) return;
     setBulkApplying(true);
     const nextBusId = bulkTargetBusId === "" ? null : bulkTargetBusId;
+    const ids = Array.from(selectedIds);
     try {
-      for (const id of selectedIds) {
-        const updated = await apiFetch<PassengerListItem>(`/api/trips/${tripId}/passengers/${id}`, {
-          method: "PATCH",
-          body: JSON.stringify({ busId: nextBusId }),
-        });
-        setPassengers((prev) => prev.map((p) => (p.id === id ? updated : p)));
-      }
+      await apiFetch(`/api/trips/${tripId}/passengers/bulk-reassign`, {
+        method: "POST",
+        body: JSON.stringify({ passengerIds: ids, busId: nextBusId }),
+      });
+      const idSet = new Set(ids);
+      setPassengers((prev) => prev.map((p) => (idSet.has(p.id) ? { ...p, busId: nextBusId } : p)));
       setSelectedIds(new Set());
     } catch (err) {
       alert(err instanceof Error ? err.message : "批次指派失敗");

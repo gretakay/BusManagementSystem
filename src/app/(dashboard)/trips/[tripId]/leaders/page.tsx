@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useParams } from "next/navigation";
 import { collection, doc, onSnapshot, orderBy, query } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { apiFetch } from "@/lib/api/client";
+import { useAuth } from "@/lib/auth/AuthProvider";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
 import type { Bus } from "@/types/bus";
 import type { BusRole } from "@/types/role";
 import type { Trip } from "@/types/trip";
+import type { AccountListItem } from "@/app/api/accounts/route";
 
 const ROLE_LABELS: Record<BusRole, string> = {
   leader: "領隊",
@@ -18,10 +20,12 @@ const ROLE_LABELS: Record<BusRole, string> = {
 
 export default function TripLeadersPage() {
   const { tripId } = useParams<{ tripId: string }>();
+  const { role: authRole } = useAuth();
   const access = useTripAccess(tripId);
 
   const [buses, setBuses] = useState<Bus[]>([]);
   const [trip, setTrip] = useState<Trip | null>(null);
+  const [accountEmails, setAccountEmails] = useState<string[]>([]);
   const [busId, setBusId] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,6 +42,27 @@ export default function TripLeadersPage() {
   const [resetPasswordValue, setResetPasswordValue] = useState("");
   const [resetSubmitting, setResetSubmitting] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!authRole?.globalSuperLead) return;
+    apiFetch<AccountListItem[]>("/api/accounts")
+      .then((list) => setAccountEmails(list.map((a) => a.email).filter((e): e is string => Boolean(e))))
+      .catch(() => setAccountEmails([]));
+  }, [authRole?.globalSuperLead]);
+
+  /**
+   * Email 自動完成建議清單:全域總負責人可看到所有帳號(來自 /api/accounts);
+   * 行程專屬總領隊沒有那個權限,但這個行程裡已經指派過的人(總領隊/各車領隊)本來就看得到,
+   * 所以額外把這些人的 email 也加進建議清單,一樣能避免重複輸入,又不會洩漏行程外的帳號清單。
+   */
+  const emailSuggestions = useMemo(() => {
+    const set = new Set(accountEmails);
+    for (const s of trip?.superLeads ?? []) set.add(s.email);
+    for (const b of buses) {
+      for (const l of b.leaders) set.add(l.email);
+    }
+    return Array.from(set).sort();
+  }, [accountEmails, trip, buses]);
 
   useEffect(() => {
     const q = query(collection(getDb(), "trips", tripId, "buses"), orderBy("busNumber"));
@@ -148,6 +173,12 @@ export default function TripLeadersPage() {
         指派各車輛的領隊/副領隊/小組長,以及此行程的總領隊。對方如果還沒有帳號,填密碼欄位即可順便建立;已有帳號的話密碼留空即可。
       </p>
 
+      <datalist id="account-emails">
+        {emailSuggestions.map((e) => (
+          <option key={e} value={e} />
+        ))}
+      </datalist>
+
       {resetTarget && (
         <form
           onSubmit={handleResetPassword}
@@ -194,6 +225,7 @@ export default function TripLeadersPage() {
           <input
             required
             type="email"
+            list="account-emails"
             placeholder="要指派為總領隊的 Email"
             value={superLeadEmail}
             onChange={(e) => setSuperLeadEmail(e.target.value)}
@@ -277,6 +309,7 @@ export default function TripLeadersPage() {
         <input
           required
           type="email"
+          list="account-emails"
           placeholder="要指派人員的 Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}

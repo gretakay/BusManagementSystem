@@ -11,6 +11,8 @@ export type AuditAction =
   | "user.resetPassword"
   | "passenger.import"
   | "passenger.upsert"
+  | "passenger.bulkReassign"
+  | "trip.broadcast"
   | "rollcall.create";
 
 export interface AuditLog {
