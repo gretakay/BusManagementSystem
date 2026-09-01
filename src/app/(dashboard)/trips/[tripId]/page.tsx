@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
 import { apiFetch } from "@/lib/api/client";
 import { TripStatusBadge } from "@/components/trip/TripStatusBadge";
+import { DeleteTripDialog } from "@/components/trip/DeleteTripDialog";
 import type { Trip } from "@/types/trip";
 import type { Bus } from "@/types/bus";
 import type { PassengerListItem } from "@/types/passenger";
@@ -54,6 +55,7 @@ export default function TripDashboardPage() {
   const [assignedCounts, setAssignedCounts] = useState<Record<string, number>>({});
   const [unarchiving, setUnarchiving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [rosterByBus, setRosterByBus] = useState<Record<string, PassengerListItem[]>>({});
   const [expandedBusId, setExpandedBusId] = useState<string | null>(null);
 
@@ -151,10 +153,6 @@ export default function TripDashboardPage() {
   }
 
   async function handleDelete() {
-    if (!trip) return;
-    if (!confirm(`確定要永久刪除行程「${trip.name}」嗎?車輛、點名紀錄、乘客名單都會一併刪除,無法復原。`)) {
-      return;
-    }
     setDeleting(true);
     try {
       await apiFetch(`/api/trips/${tripId}`, { method: "DELETE" });
@@ -215,11 +213,10 @@ export default function TripDashboardPage() {
           </Link>
           {role?.globalSuperLead && (
             <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className="rounded-md border border-red-300 px-3 py-1.5 text-red-600 disabled:opacity-60"
+              onClick={() => setShowDeleteDialog(true)}
+              className="rounded-md border border-red-300 px-3 py-1.5 text-red-600"
             >
-              {deleting ? "刪除中…" : "刪除行程"}
+              刪除行程
             </button>
           )}
         </div>
@@ -308,6 +305,15 @@ export default function TripDashboardPage() {
           </ul>
         )}
       </div>
+
+      {showDeleteDialog && (
+        <DeleteTripDialog
+          tripName={trip.name}
+          deleting={deleting}
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteDialog(false)}
+        />
+      )}
     </div>
   );
 }
