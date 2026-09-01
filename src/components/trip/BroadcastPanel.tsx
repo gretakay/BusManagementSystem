@@ -49,18 +49,28 @@ export function BroadcastPanel({ tripId, canSend }: { tripId: string; canSend: b
 
   if (!canSend && broadcasts.length === 0) return null;
 
+  const [latest, ...older] = broadcasts;
+
   return (
-    <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
-      <h2 className="text-sm font-medium text-amber-800">廣播訊息</h2>
-      {broadcasts.length > 0 && (
-        <ul className="space-y-1.5">
-          {broadcasts.map((b) => (
-            <li key={b.id} className="text-sm text-amber-900">
-              <p>{b.message}</p>
-              <p className="text-xs text-amber-600">
+    <div className="space-y-2 rounded-lg border-2 border-amber-400 bg-amber-100 p-3 shadow-sm">
+      <h2 className="flex items-center gap-1 text-sm font-bold text-amber-900">📢 廣播訊息</h2>
+      {latest && (
+        <div className="rounded-md border border-amber-300 bg-white px-3 py-2">
+          <p className="text-base font-bold text-amber-900">{latest.message}</p>
+          <p className="mt-0.5 text-xs text-amber-600">
+            {new Date(latest.createdAt).toLocaleString("zh-TW", { hour12: false })}
+            {latest.createdByEmail ? ` ・ ${latest.createdByEmail}` : ""}
+          </p>
+        </div>
+      )}
+      {older.length > 0 && (
+        <ul className="space-y-1 border-t border-amber-200 pt-1.5">
+          {older.map((b) => (
+            <li key={b.id} className="text-xs text-amber-700">
+              {b.message}
+              <span className="ml-2 text-amber-500">
                 {new Date(b.createdAt).toLocaleString("zh-TW", { hour12: false })}
-                {b.createdByEmail ? ` ・ ${b.createdByEmail}` : ""}
-              </p>
+              </span>
             </li>
           ))}
         </ul>
