@@ -108,6 +108,15 @@ export default function PassengersPage() {
     XLSX.writeFile(workbook, "人員匯入範例.xlsx");
   }
 
+  /**
+   * Excel 常把手機號碼欄位當數字存,開頭的 0 會被自動吃掉(0912345678 -> 912345678)。
+   * 台灣手機號碼固定 09 開頭共 10 碼,偵測到少一碼的「9 開頭 9 碼」號碼就自動補回開頭的 0。
+   */
+  function normalizePhoneValue(raw: string): string {
+    const trimmed = raw.trim();
+    return /^9\d{8}$/.test(trimmed) ? `0${trimmed}` : trimmed;
+  }
+
   async function handleImportFile(file: File) {
     setImporting(true);
     setImportResult(null);
@@ -125,6 +134,8 @@ export default function PassengersPage() {
           if (!key) continue;
           if (key === "identity") {
             mapped.identity = IDENTITY_FROM_TEXT[String(value).trim()] ?? "believer";
+          } else if (key === "phone" || key === "emergencyContactPhone") {
+            mapped[key] = normalizePhoneValue(String(value));
           } else {
             (mapped as Record<string, unknown>)[key] = String(value).trim();
           }
@@ -171,8 +182,9 @@ export default function PassengersPage() {
           個別列格式錯誤只會該列失敗,其餘正確的列仍會照常匯入。
         </p>
         <p className="mt-1 text-xs text-amber-600">
-          建議直接用上方「下載範例檔」修改,若自行在 Excel 輸入報名序號、手機號碼,
-          請先將該欄位格式設為「文字」,避免開頭的 0 被 Excel 自動去掉。
+          手機號碼若因 Excel 自動轉成數字而少了開頭的 0,系統會自動補回;
+          但報名序號若有固定開頭 0 的編碼規則,建議直接用上方「下載範例檔」修改,
+          或先將該欄位格式設為「文字」再輸入,避免序號跟著被 Excel 去掉開頭的 0。
         </p>
         <input
           ref={fileInputRef}
