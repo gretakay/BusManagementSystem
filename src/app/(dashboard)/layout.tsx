@@ -8,15 +8,29 @@ import { globalSuperLeadLabel } from "@/types/role";
 import { OnlineStatusBanner } from "@/components/OnlineStatusBanner";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, role, loading, signOut } = useAuth();
+  const { user, role, loading, roleLoading, roleError, retryRole, signOut } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
   }, [loading, user, router]);
 
-  if (loading || !user) {
+  if (loading || !user || roleLoading) {
     return <div className="flex h-screen items-center justify-center text-gray-500">載入中…</div>;
+  }
+
+  if (roleError) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center gap-3 text-gray-500">
+        <p>無法載入你的權限資料,請檢查網路連線。</p>
+        <button
+          onClick={retryRole}
+          className="rounded-md bg-brand-600 px-3 py-1.5 text-sm font-medium text-white"
+        >
+          重試
+        </button>
+      </div>
+    );
   }
 
   return (
