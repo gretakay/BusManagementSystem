@@ -37,6 +37,9 @@ export default function AccountsPage() {
   const [profileSubmitting, setProfileSubmitting] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
 
+  /** 目前展開「授予全域權限」表單的帳號 uid;大部分帳號預設沒有全域權限,平常收合,避免看起來每個帳號都要設定。 */
+  const [grantExpandedUid, setGrantExpandedUid] = useState<string | null>(null);
+
   /** 每個帳號在「授予/調整全域權限」表單裡目前選的稱謂/權限等級,預設沿用該帳號現有設定或初始值。 */
   const [roleDrafts, setRoleDrafts] = useState<Record<string, { title: GlobalSuperLeadTitle; level: GlobalAccessLevel }>>(
     {},
@@ -130,6 +133,7 @@ export default function AccountsPage() {
         method: "PATCH",
         body: JSON.stringify({ globalSuperLead: true, title, accessLevel: level }),
       });
+      setGrantExpandedUid(null);
       await loadAccounts();
     } catch (err) {
       alert(err instanceof Error ? err.message : "設定失敗");
@@ -146,6 +150,7 @@ export default function AccountsPage() {
         method: "PATCH",
         body: JSON.stringify({ globalSuperLead: false }),
       });
+      setGrantExpandedUid(null);
       await loadAccounts();
     } catch (err) {
       alert(err instanceof Error ? err.message : "設定失敗");
@@ -377,50 +382,66 @@ export default function AccountsPage() {
                     )}
                     {acc.loginPhone && <span className="ml-1 text-xs text-gray-400">・{acc.loginPhone}</span>}
                   </span>
-                  {acc.globalSuperLead && (
+                  {acc.globalSuperLead ? (
                     <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700">
                       {acc.globalSuperLeadTitle ?? "總負責人"}
                       {acc.globalAccessLevel === "readOnly" ? "・唯讀" : ""}
                     </span>
+                  ) : (
+                    <span className="text-xs text-gray-400">無全域權限(僅按行程指派)</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <select
-                    value={getRoleDraft(acc).title}
-                    onChange={(e) => setRoleDraft(acc, { title: e.target.value as GlobalSuperLeadTitle })}
-                    className="rounded-md border border-gray-300 px-2 py-1 text-xs"
-                  >
-                    <option value="總負責人">總負責人</option>
-                    <option value="法師">法師</option>
-                  </select>
-                  <select
-                    value={getRoleDraft(acc).level}
-                    onChange={(e) => setRoleDraft(acc, { level: e.target.value as GlobalAccessLevel })}
-                    className="rounded-md border border-gray-300 px-2 py-1 text-xs"
-                  >
-                    <option value="full">完整管理</option>
-                    <option value="readOnly">唯讀</option>
-                  </select>
-                  <button
-                    onClick={() => handleSetGlobalRole(acc, getRoleDraft(acc).title, getRoleDraft(acc).level)}
-                    disabled={togglingUid === acc.uid || (getRoleDraft(acc).level === "readOnly" && acc.uid === user?.uid)}
-                    className="text-sm text-brand-600 disabled:opacity-40"
-                    title={
-                      getRoleDraft(acc).level === "readOnly" && acc.uid === user?.uid
-                        ? "無法把自己的權限降為唯讀"
-                        : undefined
-                    }
-                  >
-                    {togglingUid === acc.uid ? "處理中…" : acc.globalSuperLead ? "套用" : "授予"}
-                  </button>
-                  {acc.globalSuperLead && (
-                    <button
-                      onClick={() => handleRevokeGlobalRole(acc)}
-                      disabled={togglingUid === acc.uid || acc.uid === user?.uid}
-                      className="text-sm text-red-500 disabled:opacity-40"
-                      title={acc.uid === user?.uid ? "無法收回自己的權限" : undefined}
-                    >
-                      收回權限
+                  {acc.globalSuperLead || grantExpandedUid === acc.uid ? (
+                    <>
+                      <select
+                        value={getRoleDraft(acc).title}
+                        onChange={(e) => setRoleDraft(acc, { title: e.target.value as GlobalSuperLeadTitle })}
+                        className="rounded-md border border-gray-300 px-2 py-1 text-xs"
+                      >
+                        <option value="總負責人">總負責人</option>
+                        <option value="法師">法師</option>
+                      </select>
+                      <select
+                        value={getRoleDraft(acc).level}
+                        onChange={(e) => setRoleDraft(acc, { level: e.target.value as GlobalAccessLevel })}
+                        className="rounded-md border border-gray-300 px-2 py-1 text-xs"
+                      >
+                        <option value="full">完整管理</option>
+                        <option value="readOnly">唯讀</option>
+                      </select>
+                      <button
+                        onClick={() => handleSetGlobalRole(acc, getRoleDraft(acc).title, getRoleDraft(acc).level)}
+                        disabled={
+                          togglingUid === acc.uid || (getRoleDraft(acc).level === "readOnly" && acc.uid === user?.uid)
+                        }
+                        className="text-sm text-brand-600 disabled:opacity-40"
+                        title={
+                          getRoleDraft(acc).level === "readOnly" && acc.uid === user?.uid
+                            ? "無法把自己的權限降為唯讀"
+                            : undefined
+                        }
+                      >
+                        {togglingUid === acc.uid ? "處理中…" : acc.globalSuperLead ? "套用" : "授予"}
+                      </button>
+                      {acc.globalSuperLead ? (
+                        <button
+                          onClick={() => handleRevokeGlobalRole(acc)}
+                          disabled={togglingUid === acc.uid || acc.uid === user?.uid}
+                          className="text-sm text-red-500 disabled:opacity-40"
+                          title={acc.uid === user?.uid ? "無法收回自己的權限" : undefined}
+                        >
+                          收回權限
+                        </button>
+                      ) : (
+                        <button onClick={() => setGrantExpandedUid(null)} className="text-sm text-gray-400">
+                          取消
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <button onClick={() => setGrantExpandedUid(acc.uid)} className="text-sm text-brand-600">
+                      授予全域權限
                     </button>
                   )}
                   <button
