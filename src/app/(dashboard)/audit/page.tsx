@@ -20,6 +20,7 @@ const ACTION_LABELS: Record<AuditAction, string> = {
   "user.resetPassword": "重設密碼",
   "passenger.import": "批次匯入人員",
   "passenger.upsert": "新增/更新人員",
+  "passenger.delete": "刪除人員",
   "passenger.bulkReassign": "批次調整車次",
   "trip.broadcast": "發送廣播",
   "rollcall.create": "建立點名場次",

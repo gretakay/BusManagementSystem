@@ -12,6 +12,7 @@ export type AuditAction =
   | "user.resetPassword"
   | "passenger.import"
   | "passenger.upsert"
+  | "passenger.delete"
   | "passenger.bulkReassign"
   | "trip.broadcast"
   | "rollcall.create";

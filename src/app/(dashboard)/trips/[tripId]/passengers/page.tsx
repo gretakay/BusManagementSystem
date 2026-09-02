@@ -68,6 +68,8 @@ export default function PassengersPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const loadPassengers = useCallback(async () => {
     setLoading(true);
     try {
@@ -81,6 +83,19 @@ export default function PassengersPage() {
   useEffect(() => {
     loadPassengers();
   }, [loadPassengers]);
+
+  async function handleDelete(p: PassengerListItem) {
+    if (!confirm(`確定要刪除「${p.name}」(序號 ${p.regNo})嗎?此動作無法復原,已有的點名紀錄不會一併清除。`)) return;
+    setDeletingId(p.id);
+    try {
+      await apiFetch(`/api/trips/${tripId}/passengers/${p.id}`, { method: "DELETE" });
+      await loadPassengers();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "刪除失敗");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
@@ -344,6 +359,7 @@ export default function PassengersPage() {
                   <th className="px-4 py-2">寮房</th>
                   <th className="px-4 py-2">緊急聯絡人</th>
                   <th className="px-4 py-2">車次</th>
+                  <th className="px-4 py-2"></th>
                 </tr>
               </thead>
               <tbody>
@@ -356,6 +372,15 @@ export default function PassengersPage() {
                     <td className="px-4 py-2">{p.lodgingInfo || "-"}</td>
                     <td className="px-4 py-2">{p.emergencyContactName || "-"}</td>
                     <td className="px-4 py-2">{p.busId || "未分配"}</td>
+                    <td className="px-4 py-2">
+                      <button
+                        onClick={() => handleDelete(p)}
+                        disabled={deletingId === p.id}
+                        className="text-red-600 disabled:opacity-40"
+                      >
+                        {deletingId === p.id ? "刪除中…" : "刪除"}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireUser, requireTripSuperLead } from "@/lib/auth/session";
 import { handleApiError } from "@/lib/api/handleError";
 import { getAdminDb } from "@/lib/firebase/admin";
+import { writeAuditLog } from "@/lib/audit";
 import { reassignBusSchema } from "@/lib/validation/passenger";
 import type { Passenger } from "@/types/passenger";
 
@@ -46,6 +47,44 @@ export async function PATCH(
     const updated = (await ref.get()).data() as Passenger;
     const { phoneEnc, emergencyContactPhoneEnc, ...listItem } = updated;
     return NextResponse.json(listItem);
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+/** 刪除單一人員(誤植報名資料等情況);已有的點名紀錄不會回溯清除,只是不再出現在名單上。superLead only。 */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { tripId: string; passengerId: string } },
+) {
+  try {
+    const user = await requireUser(req);
+    requireTripSuperLead(user, params.tripId);
+
+    const db = getAdminDb();
+    const ref = db
+      .collection("trips")
+      .doc(params.tripId)
+      .collection("passengers")
+      .doc(params.passengerId);
+    const snap = await ref.get();
+    if (!snap.exists) {
+      return NextResponse.json({ error: "人員不存在" }, { status: 404 });
+    }
+    const passenger = snap.data() as Passenger;
+    await ref.delete();
+
+    await writeAuditLog({
+      actorUid: user.uid,
+      actorEmail: user.email,
+      action: "passenger.delete",
+      tripId: params.tripId,
+      targetType: "passenger",
+      targetId: params.passengerId,
+      detail: { regNo: passenger.regNo, name: passenger.name },
+    });
+
+    return NextResponse.json({ ok: true });
   } catch (error) {
     return handleApiError(error);
   }
