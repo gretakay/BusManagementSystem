@@ -7,6 +7,7 @@ import { getDb } from "@/lib/firebase/client";
 import { apiFetch } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
+import { EmailAutocomplete, type EmailOption } from "@/components/trip/EmailAutocomplete";
 import type { Bus } from "@/types/bus";
 import type { BusRole } from "@/types/role";
 import type { Trip } from "@/types/trip";
@@ -25,7 +26,7 @@ export default function TripLeadersPage() {
 
   const [buses, setBuses] = useState<Bus[]>([]);
   const [trip, setTrip] = useState<Trip | null>(null);
-  const [accountEmails, setAccountEmails] = useState<string[]>([]);
+  const [accountOptions, setAccountOptions] = useState<EmailOption[]>([]);
   const [busId, setBusId] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -47,8 +48,14 @@ export default function TripLeadersPage() {
   useEffect(() => {
     if (!authRole?.globalSuperLead) return;
     apiFetch<AccountListItem[]>("/api/accounts")
-      .then((list) => setAccountEmails(list.map((a) => a.email).filter((e): e is string => Boolean(e))))
-      .catch(() => setAccountEmails([]));
+      .then((list) =>
+        setAccountOptions(
+          list
+            .filter((a): a is AccountListItem & { email: string } => Boolean(a.email))
+            .map((a) => ({ email: a.email, displayName: a.displayName ?? undefined })),
+        ),
+      )
+      .catch(() => setAccountOptions([]));
   }, [authRole?.globalSuperLead]);
 
   /**
@@ -57,13 +64,18 @@ export default function TripLeadersPage() {
    * 所以額外把這些人的 email 也加進建議清單,一樣能避免重複輸入,又不會洩漏行程外的帳號清單。
    */
   const emailSuggestions = useMemo(() => {
-    const set = new Set(accountEmails);
-    for (const s of trip?.superLeads ?? []) set.add(s.email);
-    for (const b of buses) {
-      for (const l of b.leaders) set.add(l.email);
+    const map = new Map<string, EmailOption>();
+    for (const o of accountOptions) map.set(o.email, o);
+    for (const s of trip?.superLeads ?? []) {
+      if (!map.has(s.email)) map.set(s.email, { email: s.email, displayName: s.displayName });
     }
-    return Array.from(set).sort();
-  }, [accountEmails, trip, buses]);
+    for (const b of buses) {
+      for (const l of b.leaders) {
+        if (!map.has(l.email)) map.set(l.email, { email: l.email, displayName: l.displayName });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.email.localeCompare(b.email));
+  }, [accountOptions, trip, buses]);
 
   useEffect(() => {
     const q = query(collection(getDb(), "trips", tripId, "buses"), orderBy("busNumber"));
@@ -175,12 +187,6 @@ export default function TripLeadersPage() {
         指派各車輛的領隊/副領隊/小組長,以及此行程的總領隊。對方如果還沒有帳號,填密碼欄位即可順便建立;已有帳號的話密碼留空即可。
       </p>
 
-      <datalist id="account-emails">
-        {emailSuggestions.map((e) => (
-          <option key={e} value={e} />
-        ))}
-      </datalist>
-
       {resetTarget && (
         <form
           onSubmit={handleResetPassword}
@@ -224,15 +230,15 @@ export default function TripLeadersPage() {
           此行程的總領隊(可管理整個行程,包含指派其他領隊)
         </h2>
         <form onSubmit={handleAssignSuperLead} className="flex flex-wrap items-center gap-2">
-          <input
-            required
-            type="email"
-            list="account-emails"
-            placeholder="要指派為總領隊的 Email"
-            value={superLeadEmail}
-            onChange={(e) => setSuperLeadEmail(e.target.value)}
-            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
-          />
+          <div className="flex-1">
+            <EmailAutocomplete
+              required
+              placeholder="要指派為總領隊的 Email"
+              value={superLeadEmail}
+              onChange={setSuperLeadEmail}
+              options={emailSuggestions}
+            />
+          </div>
           <input
             type="text"
             placeholder="密碼(對方還沒帳號才需填,至少6碼)"
@@ -308,14 +314,12 @@ export default function TripLeadersPage() {
             ))}
           </select>
         </div>
-        <input
+        <EmailAutocomplete
           required
-          type="email"
-          list="account-emails"
           placeholder="要指派人員的 Email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+          onChange={setEmail}
+          options={emailSuggestions}
         />
         <input
           type="text"
