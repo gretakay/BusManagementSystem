@@ -3,8 +3,11 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { apiFetch } from "@/lib/api/client";
+import { Pagination } from "@/components/Pagination";
 import type { AccountListItem } from "@/app/api/accounts/route";
 import type { GlobalSuperLeadTitle } from "@/types/role";
+
+const PAGE_SIZE = 50;
 
 export default function AccountsPage() {
   const { role, user } = useAuth();
@@ -12,6 +15,9 @@ export default function AccountsPage() {
   const [accounts, setAccounts] = useState<AccountListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [togglingUid, setTogglingUid] = useState<string | null>(null);
+  const [deletingUid, setDeletingUid] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -129,6 +135,25 @@ export default function AccountsPage() {
     }
   }
 
+  async function handleDeleteAccount(acc: AccountListItem) {
+    const label = acc.displayName ? `${acc.displayName}(${acc.email})` : (acc.email ?? acc.uid);
+    if (
+      !confirm(
+        `確定要永久刪除帳號「${label}」嗎?這個人將無法再登入,此操作無法復原。\n(過去行程的領隊指派紀錄會保留,不受影響)`,
+      )
+    )
+      return;
+    setDeletingUid(acc.uid);
+    try {
+      await apiFetch(`/api/accounts/${acc.uid}`, { method: "DELETE" });
+      await loadAccounts();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "刪除失敗");
+    } finally {
+      setDeletingUid(null);
+    }
+  }
+
   async function handleResetPassword(e: FormEvent) {
     e.preventDefault();
     if (!resetTarget) return;
@@ -148,6 +173,22 @@ export default function AccountsPage() {
       setResetSubmitting(false);
     }
   }
+
+  const filteredAccounts = accounts.filter((acc) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      (acc.email ?? "").toLowerCase().includes(q) ||
+      (acc.displayName ?? "").toLowerCase().includes(q) ||
+      (acc.loginPhone ?? "").includes(search)
+    );
+  });
+  const pageCount = Math.max(1, Math.ceil(filteredAccounts.length / PAGE_SIZE));
+  const pagedAccounts = filteredAccounts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
 
   if (!role?.globalSuperLead) {
     return <p className="text-sm text-red-600">你沒有權限管理帳號。</p>;
@@ -284,14 +325,25 @@ export default function AccountsPage() {
       </form>
 
       <div className="space-y-3">
-        <h2 className="text-sm font-medium text-gray-500">所有帳號</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-medium text-gray-500">
+            所有帳號({filteredAccounts.length}
+            {filteredAccounts.length !== accounts.length ? ` / 共 ${accounts.length}` : ""})
+          </h2>
+          <input
+            placeholder="搜尋 Email、名稱或手機號碼"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full max-w-xs rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+          />
+        </div>
         {loading ? (
           <p className="text-sm text-gray-400">載入中…</p>
-        ) : accounts.length === 0 ? (
-          <p className="text-sm text-gray-400">尚無帳號。</p>
+        ) : filteredAccounts.length === 0 ? (
+          <p className="text-sm text-gray-400">{accounts.length === 0 ? "尚無帳號。" : "沒有符合條件的帳號。"}</p>
         ) : (
           <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white">
-            {accounts.map((acc) => (
+            {pagedAccounts.map((acc) => (
               <li key={acc.uid} className="flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-2">
                   <span className="text-sm">
@@ -360,11 +412,20 @@ export default function AccountsPage() {
                   >
                     重設密碼
                   </button>
+                  <button
+                    onClick={() => handleDeleteAccount(acc)}
+                    disabled={deletingUid === acc.uid || acc.uid === user?.uid}
+                    className="text-sm text-red-600 disabled:opacity-40"
+                    title={acc.uid === user?.uid ? "無法刪除自己的帳號" : undefined}
+                  >
+                    {deletingUid === acc.uid ? "刪除中…" : "刪除"}
+                  </button>
                 </div>
               </li>
             ))}
           </ul>
         )}
+        <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />
       </div>
     </div>
   );

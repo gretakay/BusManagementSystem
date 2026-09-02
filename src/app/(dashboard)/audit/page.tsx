@@ -15,6 +15,7 @@ const ACTION_LABELS: Record<AuditAction, string> = {
   "bus.assignLeader": "指派車輛領隊",
   "trip.assignSuperLead": "指派行程總領隊",
   "account.create": "建立帳號",
+  "account.delete": "刪除帳號",
   "account.setGlobalSuperLead": "設定全域總負責人",
   "user.resetPassword": "重設密碼",
   "passenger.import": "批次匯入人員",
