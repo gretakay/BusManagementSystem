@@ -50,7 +50,7 @@ export default function BusRollCallPage() {
   const [plannedSessions, setPlannedSessions] = useState<PlannedSessions>({ outbound: [], return: [] });
   const [selectedId, setSelectedId] = useState<string>("");
   const [newSessionName, setNewSessionName] = useState("");
-  const [newSessionLeg, setNewSessionLeg] = useState<TripLeg>("outbound");
+  const [activeLeg, setActiveLeg] = useState<TripLeg>("outbound");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<AttendanceStatus | "">("");
   const [scanning, setScanning] = useState(false);
@@ -77,18 +77,26 @@ export default function BusRollCallPage() {
     const unsub = onSnapshot(q, (snap) => {
       const list = snap.docs.map((d) => ({ ...(d.data() as RollCall), id: d.id }));
       setRollcalls(list);
-      setSelectedId((prev) => (prev && list.some((r) => r.id === prev) ? prev : (list[0]?.id ?? "")));
     });
     return () => unsub();
   }, [tripId, busId]);
 
-  const currentLeg: TripLeg = rollcalls.find((r) => r.id === selectedId)?.leg ?? "outbound";
+  const rollcallsForActiveLeg = rollcalls.filter((r) => (r.leg ?? "outbound") === activeLeg);
+
+  // 場次下拉選單只顯示目前選的去程/回程,兩段的場次不會混在一起列;
+  // 換段、或該段的場次列表變動時,自動選到該段第一個場次(沒有就清空)。
+  useEffect(() => {
+    setSelectedId((prev) =>
+      prev && rollcallsForActiveLeg.some((r) => r.id === prev) ? prev : (rollcallsForActiveLeg[0]?.id ?? ""),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeLeg, rollcalls]);
 
   useEffect(() => {
-    apiFetch<PassengerListItem[]>(`/api/trips/${tripId}/passengers?busId=${busId}&leg=${currentLeg}`)
+    apiFetch<PassengerListItem[]>(`/api/trips/${tripId}/passengers?busId=${busId}&leg=${activeLeg}`)
       .then(setRoster)
       .catch(() => setRoster([]));
-  }, [tripId, busId, currentLeg]);
+  }, [tripId, busId, activeLeg]);
 
   useEffect(() => {
     return () => {
@@ -100,7 +108,7 @@ export default function BusRollCallPage() {
 
   async function createSession(name: string, leg: TripLeg) {
     if (!name || !user || creatingSession) return;
-    const existing = rollcalls.find((r) => r.sessionName === name);
+    const existing = rollcalls.find((r) => r.sessionName === name && (r.leg ?? "outbound") === leg);
     if (existing) {
       setSelectedId(existing.id);
       return;
@@ -126,12 +134,12 @@ export default function BusRollCallPage() {
   async function handleCreateSession() {
     const name = newSessionName.trim();
     if (!name) return;
-    await createSession(name, newSessionLeg);
+    await createSession(name, activeLeg);
     setNewSessionName("");
   }
 
-  const pendingPlannedSessions = plannedSessions[newSessionLeg].filter(
-    (name) => !rollcalls.some((r) => r.sessionName === name && (r.leg ?? "outbound") === newSessionLeg),
+  const pendingPlannedSessions = plannedSessions[activeLeg].filter(
+    (name) => !rollcalls.some((r) => r.sessionName === name && (r.leg ?? "outbound") === activeLeg),
   );
 
   async function markStatus(passengerId: string, status: AttendanceStatus, source: "manual" | "qr") {
@@ -158,7 +166,7 @@ export default function BusRollCallPage() {
     if (!passenger) {
       try {
         const result = await apiFetch<PassengerLookupResult>(
-          `/api/trips/${tripId}/passengers/lookup?regNo=${encodeURIComponent(regNo)}&busId=${busId}&leg=${currentLeg}`,
+          `/api/trips/${tripId}/passengers/lookup?regNo=${encodeURIComponent(regNo)}&busId=${busId}&leg=${activeLeg}`,
         );
         if (result.found && result.differentGroup) {
           showQrFeedback({ type: "error", message: "此人員不屬於您負責的組別" });
@@ -236,30 +244,28 @@ export default function BusRollCallPage() {
       )}
 
       <div className="space-y-2 rounded-lg border border-gray-200 bg-white p-3">
-        {access.isSuperLead && (
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-500">新場次屬於:</span>
-            {(["outbound", "return"] as TripLeg[]).map((leg) => (
-              <button
-                key={leg}
-                type="button"
-                onClick={() => setNewSessionLeg(leg)}
-                className={clsx(
-                  "rounded-full px-3 py-1",
-                  newSessionLeg === leg ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600",
-                )}
-              >
-                {LEG_LABELS[leg]}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-gray-500">目前檢視:</span>
+          {(["outbound", "return"] as TripLeg[]).map((leg) => (
+            <button
+              key={leg}
+              type="button"
+              onClick={() => setActiveLeg(leg)}
+              className={clsx(
+                "rounded-full px-3 py-1",
+                activeLeg === leg ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600",
+              )}
+            >
+              {LEG_LABELS[leg]}
+            </button>
+          ))}
+        </div>
         {access.isSuperLead && pendingPlannedSessions.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {pendingPlannedSessions.map((name) => (
               <button
                 key={name}
-                onClick={() => createSession(name, newSessionLeg)}
+                onClick={() => createSession(name, activeLeg)}
                 disabled={creatingSession}
                 className="rounded-md bg-brand-50 px-3 py-1.5 text-sm text-brand-700 disabled:opacity-60"
               >
@@ -274,10 +280,10 @@ export default function BusRollCallPage() {
             onChange={(e) => setSelectedId(e.target.value)}
             className="flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
           >
-            {rollcalls.length === 0 && <option value="">尚無場次</option>}
-            {rollcalls.map((r) => (
+            {rollcallsForActiveLeg.length === 0 && <option value="">尚無{LEG_LABELS[activeLeg]}場次</option>}
+            {rollcallsForActiveLeg.map((r) => (
               <option key={r.id} value={r.id}>
-                {r.sessionName}({LEG_LABELS[r.leg ?? "outbound"]})
+                {r.sessionName}
               </option>
             ))}
           </select>
@@ -302,7 +308,9 @@ export default function BusRollCallPage() {
 
       {!selected || !summary ? (
         <p className="text-sm text-gray-400">
-          {access.isSuperLead ? "請先建立一個點名場次。" : "尚無點名場次,請聯絡總領隊建立場次。"}
+          {access.isSuperLead
+            ? `請先建立一個${LEG_LABELS[activeLeg]}點名場次。`
+            : `尚無${LEG_LABELS[activeLeg]}點名場次,請聯絡總領隊建立場次。`}
         </p>
       ) : (
         <>
