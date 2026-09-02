@@ -37,6 +37,7 @@ export default function SeatingPage() {
   const [loading, setLoading] = useState(true);
   const [leg, setLeg] = useState<TripLeg>("outbound");
   const [filter, setFilter] = useState<string>("");
+  const [groupFilter, setGroupFilter] = useState<string>("");
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkTargetBusId, setBulkTargetBusId] = useState("");
@@ -69,9 +70,15 @@ export default function SeatingPage() {
   // 切換去程/回程時,先前的篩選/選取條件通常不再有意義,重置避免誤操作到另一段的資料。
   useEffect(() => {
     setFilter("");
+    setGroupFilter("");
     setSelectedIds(new Set());
     setBulkTargetBusId("");
   }, [leg]);
+
+  // 換一台車之後,原本選的組別多半不屬於這台車,重置避免篩到空結果。
+  useEffect(() => {
+    setGroupFilter("");
+  }, [filter]);
 
   const counts = useMemo(() => {
     const map = new Map<string, number>();
@@ -117,10 +124,21 @@ export default function SeatingPage() {
     }
   }
 
+  /** 只有選到特定車輛時,組別篩選才有意義(組別是車內的小分組)。 */
+  const groupsForSelectedBus = useMemo(() => {
+    if (!filter || filter === UNASSIGNED) return [];
+    const set = new Set<string>();
+    for (const p of passengers) {
+      if (p[busIdField] === filter && p.busGroup) set.add(p.busGroup);
+    }
+    return Array.from(set).sort();
+  }, [passengers, busIdField, filter]);
+
   const filteredPassengers = passengers.filter((p) => {
     const busId = p[busIdField];
     if (filter === UNASSIGNED && busId) return false;
     if (filter && filter !== UNASSIGNED && busId !== filter) return false;
+    if (groupFilter && p.busGroup !== groupFilter) return false;
     if (search && !p.name.includes(search) && !p.regNo.includes(search)) return false;
     return true;
   });
@@ -261,6 +279,33 @@ export default function SeatingPage() {
               </button>
             ))}
           </div>
+
+          {groupsForSelectedBus.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-gray-400">組別篩選:</span>
+              <button
+                onClick={() => setGroupFilter("")}
+                className={clsx(
+                  "rounded-full px-3 py-1",
+                  groupFilter === "" ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600",
+                )}
+              >
+                全部組別
+              </button>
+              {groupsForSelectedBus.map((g) => (
+                <button
+                  key={g}
+                  onClick={() => setGroupFilter((f) => (f === g ? "" : g))}
+                  className={clsx(
+                    "rounded-full px-3 py-1",
+                    groupFilter === g ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600",
+                  )}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+          )}
 
           <input
             placeholder="搜尋姓名或報名序號"
