@@ -29,6 +29,8 @@ export interface UserRoleDoc {
   globalSuperLeadTitle?: GlobalSuperLeadTitle;
   displayName?: string;
   email?: string;
+  /** 登入用手機號碼(選填),登入頁可以打這個代替 email;實際 Firebase Auth 帳號仍以 email 為準 */
+  loginPhone?: string;
   trips: Record<string, TripRoleAssignment>;
 }
 

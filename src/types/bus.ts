@@ -19,6 +19,8 @@ export interface BusLeaderAssignment {
   role: BusRole;
   /** 只負責這個組別(例如小客車車號);留空表示整台車都看得到 */
   groupTag?: string;
+  /** 指派當下的顯示名稱快照,方便總領隊一眼看出是誰而不用記 email */
+  displayName?: string;
 }
 
 export interface CreateBusInput {

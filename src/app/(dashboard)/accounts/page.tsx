@@ -15,6 +15,8 @@ export default function AccountsPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [loginPhone, setLoginPhone] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -22,6 +24,12 @@ export default function AccountsPage() {
   const [resetPasswordValue, setResetPasswordValue] = useState("");
   const [resetSubmitting, setResetSubmitting] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
+
+  const [profileTarget, setProfileTarget] = useState<AccountListItem | null>(null);
+  const [profileDisplayName, setProfileDisplayName] = useState("");
+  const [profileLoginPhone, setProfileLoginPhone] = useState("");
+  const [profileSubmitting, setProfileSubmitting] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   async function loadAccounts() {
     setLoading(true);
@@ -47,15 +55,44 @@ export default function AccountsPage() {
     try {
       await apiFetch("/api/accounts", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          displayName: displayName || undefined,
+          loginPhone: loginPhone || undefined,
+        }),
       });
       setEmail("");
       setPassword("");
+      setDisplayName("");
+      setLoginPhone("");
       await loadAccounts();
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "建立失敗");
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function handleSaveProfile(e: FormEvent) {
+    e.preventDefault();
+    if (!profileTarget) return;
+    setProfileError(null);
+    setProfileSubmitting(true);
+    try {
+      await apiFetch(`/api/accounts/${profileTarget.uid}/profile`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          displayName: profileDisplayName || undefined,
+          loginPhone: profileLoginPhone || undefined,
+        }),
+      });
+      setProfileTarget(null);
+      await loadAccounts();
+    } catch (err) {
+      setProfileError(err instanceof Error ? err.message : "設定失敗");
+    } finally {
+      setProfileSubmitting(false);
     }
   }
 
@@ -161,6 +198,49 @@ export default function AccountsPage() {
         </form>
       )}
 
+      {profileTarget && (
+        <form
+          onSubmit={handleSaveProfile}
+          className="space-y-2 rounded-lg border border-brand-200 bg-brand-50 p-4"
+        >
+          <p className="text-sm font-medium">設定 {profileTarget.email ?? profileTarget.uid} 的顯示名稱/登入手機</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              placeholder="顯示名稱(例如真實姓名)"
+              value={profileDisplayName}
+              onChange={(e) => setProfileDisplayName(e.target.value)}
+              className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
+            <input
+              type="text"
+              placeholder="登入手機號碼(選填,09 開頭共 10 碼)"
+              value={profileLoginPhone}
+              onChange={(e) => setProfileLoginPhone(e.target.value)}
+              className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
+            <button
+              type="submit"
+              disabled={profileSubmitting}
+              className="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+            >
+              {profileSubmitting ? "儲存中…" : "儲存"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setProfileTarget(null);
+                setProfileError(null);
+              }}
+              className="rounded-md border border-gray-300 px-4 py-2 text-sm"
+            >
+              取消
+            </button>
+          </div>
+          {profileError && <p className="text-sm text-red-600">{profileError}</p>}
+        </form>
+      )}
+
       <form onSubmit={handleCreate} className="grid max-w-lg gap-3 rounded-lg border border-gray-200 bg-white p-4">
         <h2 className="text-sm font-medium text-gray-500">新增帳號</h2>
         <input
@@ -177,6 +257,20 @@ export default function AccountsPage() {
           placeholder="密碼(至少6碼)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+        />
+        <input
+          type="text"
+          placeholder="顯示名稱(選填,例如真實姓名,方便辨識是誰)"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+        />
+        <input
+          type="text"
+          placeholder="登入手機號碼(選填,登入時可以打這個代替 Email)"
+          value={loginPhone}
+          onChange={(e) => setLoginPhone(e.target.value)}
           className="rounded-md border border-gray-300 px-3 py-2 text-sm"
         />
         {createError && <p className="text-sm text-red-600">{createError}</p>}
@@ -200,7 +294,17 @@ export default function AccountsPage() {
             {accounts.map((acc) => (
               <li key={acc.uid} className="flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm">{acc.email ?? acc.uid}</span>
+                  <span className="text-sm">
+                    {acc.displayName ? (
+                      <>
+                        <span className="font-medium">{acc.displayName}</span>
+                        <span className="ml-1 text-xs text-gray-400">{acc.email}</span>
+                      </>
+                    ) : (
+                      acc.email ?? acc.uid
+                    )}
+                    {acc.loginPhone && <span className="ml-1 text-xs text-gray-400">・{acc.loginPhone}</span>}
+                  </span>
                   {acc.globalSuperLead && (
                     <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700">
                       {acc.globalSuperLeadTitle ?? "總負責人"}
@@ -235,6 +339,17 @@ export default function AccountsPage() {
                       </button>
                     </>
                   )}
+                  <button
+                    onClick={() => {
+                      setProfileTarget(acc);
+                      setProfileDisplayName(acc.displayName ?? "");
+                      setProfileLoginPhone(acc.loginPhone ?? "");
+                      setProfileError(null);
+                    }}
+                    className="text-sm text-brand-600"
+                  >
+                    編輯名稱/手機
+                  </button>
                   <button
                     onClick={() => {
                       setResetTarget({ uid: acc.uid, email: acc.email });

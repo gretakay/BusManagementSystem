@@ -8,13 +8,19 @@ import { getDb } from "@/lib/firebase/client";
 import { apiFetch } from "@/lib/api/client";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
 import type { Bus } from "@/types/bus";
-import type { PassengerListItem, TripLeg } from "@/types/passenger";
+import type { PassengerIdentity, PassengerListItem, TripLeg } from "@/types/passenger";
 
 const UNASSIGNED = "__unassigned__";
 
 const LEG_LABELS: Record<TripLeg, string> = {
   outbound: "去程",
   return: "回程",
+};
+
+const IDENTITY_LABELS: Record<PassengerIdentity, string> = {
+  guest: "貴賓",
+  believer: "信眾",
+  volunteer: "義工",
 };
 
 /**
@@ -320,6 +326,10 @@ export default function SeatingPage() {
                   <span>
                     {p.name}
                     <span className="ml-2 text-xs text-gray-400">{p.regNo}</span>
+                    <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+                      {IDENTITY_LABELS[p.identity]}
+                      {p.identity === "volunteer" && p.volunteerGroup ? `・${p.volunteerGroup}` : ""}
+                    </span>
                   </span>
                 </label>
                 <div className="flex items-center gap-2">

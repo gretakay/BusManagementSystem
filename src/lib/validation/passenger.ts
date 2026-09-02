@@ -1,13 +1,5 @@
 import { z } from "zod";
-
-/**
- * 手機號碼欄位常見的漏打/被 Excel 轉成數字問題:開頭的 0 不見了(0912345678 -> 912345678)。
- * 台灣手機固定 09 開頭共 10 碼,偵測到少一碼的「9 開頭 9 碼」就自動補回開頭的 0。
- * 放在 schema 這層,不管是逐筆新增表單還是批次匯入都會套用,不用個別頁面各自處理。
- */
-function normalizeTaiwanMobile(value: string): string {
-  return /^9\d{8}$/.test(value) ? `0${value}` : value;
-}
+import { normalizeTaiwanMobile } from "@/lib/phone";
 
 export const upsertPassengerSchema = z.object({
   regNo: z.string().trim().min(1, "報名序號為必填"),

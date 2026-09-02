@@ -260,7 +260,7 @@ export default function TripLeadersPage() {
                 key={s.uid}
                 className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600"
               >
-                {s.email}
+                {s.displayName ? `${s.displayName}(${s.email})` : s.email}
                 <button
                   onClick={() => {
                     setResetTarget({ uid: s.uid, email: s.email });
@@ -360,7 +360,7 @@ export default function TripLeadersPage() {
                         className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600"
                       >
                         {ROLE_LABELS[l.role]}
-                        {l.groupTag ? `(${l.groupTag})` : ""}:{l.email}
+                        {l.groupTag ? `(${l.groupTag})` : ""}:{l.displayName ? `${l.displayName}(${l.email})` : l.email}
                         <button
                           onClick={() => {
                             setResetTarget({ uid: l.uid, email: l.email });

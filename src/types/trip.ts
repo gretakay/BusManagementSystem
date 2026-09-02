@@ -36,6 +36,8 @@ export function normalizePlannedSessions(raw: unknown): PlannedSessions {
 export interface TripSuperLeadAssignment {
   uid: string;
   email: string;
+  /** 指派當下的顯示名稱快照,方便總負責人一眼看出是誰而不用記 email */
+  displayName?: string;
 }
 
 export interface CreateTripInput {

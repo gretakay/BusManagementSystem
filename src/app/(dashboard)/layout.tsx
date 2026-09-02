@@ -31,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 帳號管理
               </Link>
             )}
-            <span>{user.email}</span>
+            <span>{role?.displayName ? `${role.displayName}(${user.email})` : user.email}</span>
             {role?.globalSuperLead && (
               <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700">
                 {globalSuperLeadLabel(role)}

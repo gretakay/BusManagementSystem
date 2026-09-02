@@ -126,7 +126,7 @@ export default function BusesPage() {
                     key={l.uid}
                     className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600"
                   >
-                    {ROLE_LABELS[l.role]}:{l.email}
+                    {ROLE_LABELS[l.role]}:{l.displayName ? `${l.displayName}(${l.email})` : l.email}
                   </li>
                 ))
               )}

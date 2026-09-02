@@ -33,6 +33,9 @@ export async function POST(req: NextRequest, { params }: { params: { tripId: str
     }
 
     const roleRef = db.collection("roles").doc(targetUser.uid);
+    const existingRoleSnap = await roleRef.get();
+    const displayName = existingRoleSnap.data()?.displayName as string | undefined;
+
     await roleRef.set(
       {
         email: targetUser.email ?? email,
@@ -44,7 +47,7 @@ export async function POST(req: NextRequest, { params }: { params: { tripId: str
     const trip = tripSnap.data() as Trip;
     const nextSuperLeads: TripSuperLeadAssignment[] = [
       ...(trip.superLeads ?? []).filter((s) => s.uid !== targetUser.uid),
-      { uid: targetUser.uid, email: targetUser.email ?? email },
+      { uid: targetUser.uid, email: targetUser.email ?? email, ...(displayName ? { displayName } : {}) },
     ];
     await tripRef.update({ superLeads: nextSuperLeads });
 

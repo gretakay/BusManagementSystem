@@ -37,6 +37,11 @@ export async function POST(
     }
 
     const roleRef = db.collection("roles").doc(targetUser.uid);
+    const existingRoleSnap = await roleRef.get();
+    const displayName = existingRoleSnap.exists
+      ? (existingRoleSnap.data()?.displayName as string | undefined)
+      : undefined;
+
     await roleRef.set(
       {
         email: targetUser.email ?? email,
@@ -52,7 +57,13 @@ export async function POST(
     const bus = busSnap.data() as Bus;
     const nextLeaders: BusLeaderAssignment[] = [
       ...bus.leaders.filter((l) => l.uid !== targetUser.uid),
-      { uid: targetUser.uid, email: targetUser.email ?? email, role, ...(groupTag ? { groupTag } : {}) },
+      {
+        uid: targetUser.uid,
+        email: targetUser.email ?? email,
+        role,
+        ...(groupTag ? { groupTag } : {}),
+        ...(displayName ? { displayName } : {}),
+      },
     ];
     await busRef.update({ leaders: nextLeaders });
 

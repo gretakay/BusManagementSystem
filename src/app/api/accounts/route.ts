@@ -12,6 +12,8 @@ export interface AccountListItem {
   createdAt: string;
   globalSuperLead: boolean;
   globalSuperLeadTitle: GlobalSuperLeadTitle | null;
+  displayName: string | null;
+  loginPhone: string | null;
 }
 
 /** 帳號管理:不綁定特定行程,獨立建立/列出登入帳號,僅全域總負責人可用。 */
@@ -32,17 +34,19 @@ export async function GET(req: NextRequest) {
     } while (pageToken);
 
     const rolesSnap = await getAdminDb().collection("roles").get();
-    const globalSuperLeadTitles = new Map<string, GlobalSuperLeadTitle>();
-    for (const d of rolesSnap.docs) {
-      const data = d.data() as UserRoleDoc;
-      if (data.globalSuperLead) globalSuperLeadTitles.set(d.id, globalSuperLeadLabel(data));
-    }
+    const rolesByUid = new Map<string, UserRoleDoc>();
+    for (const d of rolesSnap.docs) rolesByUid.set(d.id, d.data() as UserRoleDoc);
 
-    const accounts: AccountListItem[] = authUsers.map((u) => ({
-      ...u,
-      globalSuperLead: globalSuperLeadTitles.has(u.uid),
-      globalSuperLeadTitle: globalSuperLeadTitles.get(u.uid) ?? null,
-    }));
+    const accounts: AccountListItem[] = authUsers.map((u) => {
+      const roleDoc = rolesByUid.get(u.uid);
+      return {
+        ...u,
+        globalSuperLead: Boolean(roleDoc?.globalSuperLead),
+        globalSuperLeadTitle: roleDoc?.globalSuperLead ? globalSuperLeadLabel(roleDoc) : null,
+        displayName: roleDoc?.displayName ?? null,
+        loginPhone: roleDoc?.loginPhone ?? null,
+      };
+    });
 
     accounts.sort((a, b) => (a.email ?? "").localeCompare(b.email ?? ""));
     return NextResponse.json(accounts);
@@ -55,14 +59,34 @@ export async function POST(req: NextRequest) {
   try {
     const user = await requireUser(req);
     requireGlobalSuperLead(user);
-    const { email, password } = createAccountSchema.parse(await req.json());
+    const { email, password, displayName, loginPhone } = createAccountSchema.parse(await req.json());
 
     const auth = getAdminAuth();
     const existing = await auth.getUserByEmail(email).catch(() => null);
     if (existing) {
       return NextResponse.json({ error: `email 為 ${email} 的帳號已存在` }, { status: 409 });
     }
+
+    const db = getAdminDb();
+    if (loginPhone) {
+      const dup = await db.collection("roles").where("loginPhone", "==", loginPhone).limit(1).get();
+      if (!dup.empty) {
+        return NextResponse.json({ error: `手機號碼 ${loginPhone} 已被其他帳號使用` }, { status: 409 });
+      }
+    }
+
     const created = await auth.createUser({ email, password });
+
+    if (displayName || loginPhone) {
+      await db.collection("roles").doc(created.uid).set(
+        {
+          email,
+          ...(displayName ? { displayName } : {}),
+          ...(loginPhone ? { loginPhone } : {}),
+        },
+        { merge: true },
+      );
+    }
 
     await writeAuditLog({
       actorUid: user.uid,
@@ -70,7 +94,7 @@ export async function POST(req: NextRequest) {
       action: "account.create",
       targetType: "user",
       targetId: created.uid,
-      detail: { email },
+      detail: { email, displayName, loginPhone },
     });
 
     const account: AccountListItem = {
@@ -79,6 +103,8 @@ export async function POST(req: NextRequest) {
       createdAt: created.metadata.creationTime,
       globalSuperLead: false,
       globalSuperLeadTitle: null,
+      displayName: displayName ?? null,
+      loginPhone: loginPhone ?? null,
     };
     return NextResponse.json(account, { status: 201 });
   } catch (error) {
