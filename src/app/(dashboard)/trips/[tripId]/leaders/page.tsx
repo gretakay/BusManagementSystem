@@ -30,6 +30,7 @@ export default function TripLeadersPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<BusRole>("leader");
+  const [groupTag, setGroupTag] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -119,10 +120,11 @@ export default function TripLeadersPage() {
     try {
       await apiFetch(`/api/trips/${tripId}/buses/${busId}/leaders`, {
         method: "POST",
-        body: JSON.stringify({ email, role, password: password || undefined }),
+        body: JSON.stringify({ email, role, password: password || undefined, groupTag: groupTag || undefined }),
       });
       setEmail("");
       setPassword("");
+      setGroupTag("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "指派失敗");
     } finally {
@@ -322,6 +324,13 @@ export default function TripLeadersPage() {
           onChange={(e) => setPassword(e.target.value)}
           className="rounded-md border border-gray-300 px-3 py-2 text-sm"
         />
+        <input
+          type="text"
+          placeholder="只負責的組別(選填,例如小客車車號;留空 = 整台車都看得到)"
+          value={groupTag}
+          onChange={(e) => setGroupTag(e.target.value)}
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+        />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button
           type="submit"
@@ -350,7 +359,8 @@ export default function TripLeadersPage() {
                         key={l.uid}
                         className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600"
                       >
-                        {ROLE_LABELS[l.role]}:{l.email}
+                        {ROLE_LABELS[l.role]}
+                        {l.groupTag ? `(${l.groupTag})` : ""}:{l.email}
                         <button
                           onClick={() => {
                             setResetTarget({ uid: l.uid, email: l.email });

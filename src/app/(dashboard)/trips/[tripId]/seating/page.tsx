@@ -35,6 +35,7 @@ export default function SeatingPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkTargetBusId, setBulkTargetBusId] = useState("");
   const [bulkApplying, setBulkApplying] = useState(false);
+  const [groupDrafts, setGroupDrafts] = useState<Record<string, string>>({});
 
   const busIdField = leg === "return" ? "returnBusId" : "busId";
 
@@ -90,6 +91,26 @@ export default function SeatingPage() {
     }
   }
 
+  function handleGroupInputChange(id: string, value: string) {
+    setGroupDrafts((d) => ({ ...d, [id]: value }));
+  }
+
+  async function handleGroupBlur(id: string) {
+    const value = groupDrafts[id];
+    if (value === undefined) return;
+    const current = passengers.find((p) => p.id === id);
+    if (current && (current.busGroup ?? "") === value) return;
+    try {
+      const updated = await apiFetch<PassengerListItem>(`/api/trips/${tripId}/passengers/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ busGroup: value }),
+      });
+      setPassengers((prev) => prev.map((p) => (p.id === id ? updated : p)));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "組別更新失敗");
+    }
+  }
+
   const filteredPassengers = passengers.filter((p) => {
     const busId = p[busIdField];
     if (filter === UNASSIGNED && busId) return false;
@@ -131,10 +152,8 @@ export default function SeatingPage() {
         method: "POST",
         body: JSON.stringify({ passengerIds: ids, leg, busId: nextBusId }),
       });
-      const idSet = new Set(ids);
-      setPassengers((prev) =>
-        prev.map((p) => (idSet.has(p.id) ? { ...p, [busIdField]: nextBusId } : p)),
-      );
+      // 去程批次指派時,回程可能依人各自不同步(未設定過才會跟著同步),不能用單一值樂觀更新,直接重新讀取。
+      await loadPassengers();
       setSelectedIds(new Set());
     } catch (err) {
       alert(err instanceof Error ? err.message : "批次指派失敗");
@@ -200,6 +219,9 @@ export default function SeatingPage() {
       <div className="rounded-lg border border-gray-200 bg-white">
         <div className="space-y-3 border-b border-gray-100 p-4">
           <h2 className="text-sm font-medium text-gray-500">人員車次調整({LEG_LABELS[leg]})</h2>
+          <p className="text-xs text-gray-400">
+            「組別」欄位可標記車內小組(例如小客車車號),搭配該車小組長的指派可只看自己組別,去回程共用同一個組別。
+          </p>
 
           <div className="flex flex-wrap gap-2 text-xs">
             <button
@@ -300,18 +322,27 @@ export default function SeatingPage() {
                     <span className="ml-2 text-xs text-gray-400">{p.regNo}</span>
                   </span>
                 </label>
-                <select
-                  value={p[busIdField] ?? ""}
-                  onChange={(e) => handleReassign(p.id, e.target.value)}
-                  className="rounded-md border border-gray-300 px-2 py-1 text-sm"
-                >
-                  <option value="">未分配</option>
-                  {buses.map((bus) => (
-                    <option key={bus.id} value={bus.id}>
-                      {bus.busNumber}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-2">
+                  <input
+                    placeholder="組別"
+                    value={groupDrafts[p.id] ?? p.busGroup ?? ""}
+                    onChange={(e) => handleGroupInputChange(p.id, e.target.value)}
+                    onBlur={() => handleGroupBlur(p.id)}
+                    className="w-20 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                  />
+                  <select
+                    value={p[busIdField] ?? ""}
+                    onChange={(e) => handleReassign(p.id, e.target.value)}
+                    className="rounded-md border border-gray-300 px-2 py-1 text-sm"
+                  >
+                    <option value="">未分配</option>
+                    {buses.map((bus) => (
+                      <option key={bus.id} value={bus.id}>
+                        {bus.busNumber}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </li>
             ))}
           </ul>

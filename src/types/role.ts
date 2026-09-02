@@ -9,11 +9,17 @@ export type BusRole = "leader" | "coLeader" | "groupLeader";
 /** 全域總負責人的顯示頭銜,權限完全相同,純粹是給不同身分的人看的稱呼(例如朝山共修的「法師」)。 */
 export type GlobalSuperLeadTitle = "總負責人" | "法師";
 
+export interface BusRoleAssignment {
+  role: BusRole;
+  /** 只負責/只看得到該車內這個組別的人(例如小客車車號);未設定則整台車都看得到,維持原本行為 */
+  groupTag?: string;
+}
+
 export interface TripRoleAssignment {
   /** 該使用者在此行程是否為總領隊/師父(可看全部車輛) */
   superLead: boolean;
   /** 該使用者在此行程內,擔任領隊/副領隊/小組長的車輛 ID 清單 */
-  busRoles: Record<string, BusRole>;
+  busRoles: Record<string, BusRoleAssignment>;
 }
 
 export interface UserRoleDoc {
@@ -43,6 +49,14 @@ export function getAssignedBusIds(role: UserRoleDoc | null | undefined, tripId: 
   return Object.keys(trip.busRoles ?? {});
 }
 
+/** 相容改版前的資料:busRoles 的值原本是純字串(BusRole),改版後是 { role, groupTag? } 物件。 */
+function normalizeBusRoleAssignment(
+  raw: BusRoleAssignment | BusRole | undefined,
+): BusRoleAssignment | undefined {
+  if (raw == null) return undefined;
+  return typeof raw === "string" ? { role: raw } : raw;
+}
+
 export function canAccessBus(
   role: UserRoleDoc | null | undefined,
   tripId: string,
@@ -50,6 +64,19 @@ export function canAccessBus(
 ): boolean {
   if (isTripSuperLead(role, tripId)) return true;
   return getAssignedBusIds(role, tripId).includes(busId);
+}
+
+/**
+ * 此使用者在該車是否只負責特定組別(例如小客車車號);回傳 undefined 表示整台車都看得到
+ * (包含總領隊/師父,以及沒有設定組別的一般領隊/副領隊/小組長)。
+ */
+export function getBusGroupTag(
+  role: UserRoleDoc | null | undefined,
+  tripId: string,
+  busId: string,
+): string | undefined {
+  if (isTripSuperLead(role, tripId)) return undefined;
+  return normalizeBusRoleAssignment(role?.trips?.[tripId]?.busRoles?.[busId])?.groupTag;
 }
 
 /** 此使用者在該行程是否有任何指派(行程總領隊,或任一車輛的領隊/副領隊/小組長),供行程列表篩選用。 */
@@ -74,7 +101,10 @@ export function tripRoleSummary(role: UserRoleDoc | null | undefined, tripId: st
   const trip = role.trips?.[tripId];
   if (!trip) return null;
   if (trip.superLead) return "此行程總領隊";
-  const roles = Array.from(new Set(Object.values(trip.busRoles ?? {})));
-  if (roles.length === 0) return null;
+  const assignments = Object.values(trip.busRoles ?? {})
+    .map(normalizeBusRoleAssignment)
+    .filter((a): a is BusRoleAssignment => a != null);
+  if (assignments.length === 0) return null;
+  const roles = Array.from(new Set(assignments.map((a) => a.role)));
   return roles.map((r) => BUS_ROLE_LABELS[r]).join("、");
 }

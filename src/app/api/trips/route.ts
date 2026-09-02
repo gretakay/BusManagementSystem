@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       createdAt: now,
       createdBy: user.uid,
       superLeads: [],
-      plannedSessions: [],
+      plannedSessions: { outbound: [], return: [] },
     };
     await ref.set(trip);
 

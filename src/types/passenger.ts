@@ -15,6 +15,8 @@ export interface Passenger {
   busId: string | null;
   /** 回程車次,與 busId 各自獨立(預設也是 null,需另外分配,不會自動跟去程一樣) */
   returnBusId: string | null;
+  /** 車內組別(例如小客車車號),搭配該車小組長的 groupTag 指派做點名範圍限制;去回程共用同一個組別 */
+  busGroup?: string;
   name: string;
   dharmaName?: string;
   /** 加密後密文,不應直接顯示於畫面 */
@@ -54,6 +56,7 @@ export interface UpsertPassengerInput {
   emergencyContactPhone?: string;
   busId?: string | null;
   returnBusId?: string | null;
+  busGroup?: string;
   lodgingInfo?: string;
 }
 

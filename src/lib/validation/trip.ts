@@ -6,6 +6,8 @@ export const createTripSchema = z.object({
   busCount: z.number().int().min(1, "車輛數量至少為 1"),
 });
 
+const plannedSessionListSchema = z.array(z.string().trim().min(1)).max(20, "點名場次最多 20 個");
+
 export const updateTripSchema = z.object({
   name: z.string().trim().min(1).optional(),
   date: z
@@ -14,7 +16,12 @@ export const updateTripSchema = z.object({
     .optional(),
   busCount: z.number().int().min(1).optional(),
   status: z.enum(["notStarted", "inProgress", "ended"]).optional(),
-  plannedSessions: z.array(z.string().trim().min(1)).max(20, "點名場次最多 20 個").optional(),
+  plannedSessions: z
+    .object({
+      outbound: plannedSessionListSchema,
+      return: plannedSessionListSchema,
+    })
+    .optional(),
 });
 
 export const assignTripSuperLeadSchema = z.object({

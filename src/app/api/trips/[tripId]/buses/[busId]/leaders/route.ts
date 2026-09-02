@@ -19,7 +19,7 @@ export async function POST(
   try {
     const user = await requireUser(req);
     requireTripSuperLead(user, params.tripId);
-    const { email, role, password } = assignBusLeaderSchema.parse(await req.json());
+    const { email, role, password, groupTag } = assignBusLeaderSchema.parse(await req.json());
 
     const targetUser = await findOrCreateUserByEmail(email, password);
     if (!targetUser) {
@@ -40,7 +40,11 @@ export async function POST(
     await roleRef.set(
       {
         email: targetUser.email ?? email,
-        trips: { [params.tripId]: { busRoles: { [params.busId]: role } } },
+        trips: {
+          [params.tripId]: {
+            busRoles: { [params.busId]: groupTag ? { role, groupTag } : { role } },
+          },
+        },
       },
       { merge: true },
     );
@@ -48,7 +52,7 @@ export async function POST(
     const bus = busSnap.data() as Bus;
     const nextLeaders: BusLeaderAssignment[] = [
       ...bus.leaders.filter((l) => l.uid !== targetUser.uid),
-      { uid: targetUser.uid, email: targetUser.email ?? email, role },
+      { uid: targetUser.uid, email: targetUser.email ?? email, role, ...(groupTag ? { groupTag } : {}) },
     ];
     await busRef.update({ leaders: nextLeaders });
 
@@ -59,7 +63,7 @@ export async function POST(
       tripId: params.tripId,
       targetType: "bus",
       targetId: params.busId,
-      detail: { assignedUid: targetUser.uid, email, role },
+      detail: { assignedUid: targetUser.uid, email, role, groupTag },
     });
 
     return NextResponse.json({ leaders: nextLeaders });

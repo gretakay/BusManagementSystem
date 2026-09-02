@@ -20,7 +20,7 @@ import { apiFetch } from "@/lib/api/client";
 import { QrScanner } from "@/components/rollcall/QrScanner";
 import type { PassengerContactInfo, PassengerListItem, TripLeg } from "@/types/passenger";
 import type { AttendanceStatus, RollCall } from "@/types/rollcall";
-import type { Trip } from "@/types/trip";
+import { normalizePlannedSessions, type PlannedSessions, type Trip } from "@/types/trip";
 import type { PassengerLookupResult } from "@/app/api/trips/[tripId]/passengers/lookup/route";
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
@@ -47,7 +47,7 @@ export default function BusRollCallPage() {
 
   const [roster, setRoster] = useState<PassengerListItem[]>([]);
   const [rollcalls, setRollcalls] = useState<RollCall[]>([]);
-  const [plannedSessions, setPlannedSessions] = useState<string[]>([]);
+  const [plannedSessions, setPlannedSessions] = useState<PlannedSessions>({ outbound: [], return: [] });
   const [selectedId, setSelectedId] = useState<string>("");
   const [newSessionName, setNewSessionName] = useState("");
   const [newSessionLeg, setNewSessionLeg] = useState<TripLeg>("outbound");
@@ -63,7 +63,7 @@ export default function BusRollCallPage() {
 
   useEffect(() => {
     const unsub = onSnapshot(doc(getDb(), "trips", tripId), (snap) => {
-      if (snap.exists()) setPlannedSessions((snap.data() as Trip).plannedSessions ?? []);
+      if (snap.exists()) setPlannedSessions(normalizePlannedSessions((snap.data() as Trip).plannedSessions));
     });
     return () => unsub();
   }, [tripId]);
@@ -130,8 +130,8 @@ export default function BusRollCallPage() {
     setNewSessionName("");
   }
 
-  const pendingPlannedSessions = plannedSessions.filter(
-    (name) => !rollcalls.some((r) => r.sessionName === name),
+  const pendingPlannedSessions = plannedSessions[newSessionLeg].filter(
+    (name) => !rollcalls.some((r) => r.sessionName === name && (r.leg ?? "outbound") === newSessionLeg),
   );
 
   async function markStatus(passengerId: string, status: AttendanceStatus, source: "manual" | "qr") {
@@ -160,7 +160,9 @@ export default function BusRollCallPage() {
         const result = await apiFetch<PassengerLookupResult>(
           `/api/trips/${tripId}/passengers/lookup?regNo=${encodeURIComponent(regNo)}&busId=${busId}&leg=${currentLeg}`,
         );
-        if (result.found && !result.sameBus) {
+        if (result.found && result.differentGroup) {
+          showQrFeedback({ type: "error", message: "此人員不屬於您負責的組別" });
+        } else if (result.found && !result.sameBus) {
           showQrFeedback({
             type: "error",
             message: `${result.name ?? regNo} 不是本車人員,屬於「${result.busNumber ?? "其他車次"}」`,
@@ -229,6 +231,9 @@ export default function BusRollCallPage() {
   return (
     <div className="space-y-4 pb-24">
       <h1 className="text-xl font-semibold">現場點名</h1>
+      {access.getBusGroupTag(busId) && (
+        <p className="text-sm text-brand-700">你負責的組別:{access.getBusGroupTag(busId)}(只看得到本組人員)</p>
+      )}
 
       <div className="space-y-2 rounded-lg border border-gray-200 bg-white p-3">
         {access.isSuperLead && (

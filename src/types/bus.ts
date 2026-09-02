@@ -17,6 +17,8 @@ export interface BusLeaderAssignment {
   uid: string;
   email: string;
   role: BusRole;
+  /** 只負責這個組別(例如小客車車號);留空表示整台車都看得到 */
+  groupTag?: string;
 }
 
 export interface CreateBusInput {
@@ -29,4 +31,5 @@ export interface CreateBusInput {
 export interface AssignBusLeaderInput {
   email: string;
   role: BusRole;
+  groupTag?: string;
 }

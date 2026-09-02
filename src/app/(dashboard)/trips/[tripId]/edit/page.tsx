@@ -6,7 +6,13 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { apiFetch } from "@/lib/api/client";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
-import type { Trip } from "@/types/trip";
+import { normalizePlannedSessions, type PlannedSessions, type Trip } from "@/types/trip";
+import type { TripLeg } from "@/types/passenger";
+
+const LEG_LABELS: Record<TripLeg, string> = {
+  outbound: "去程",
+  return: "回程",
+};
 
 export default function EditTripPage() {
   const { tripId } = useParams<{ tripId: string }>();
@@ -17,8 +23,11 @@ export default function EditTripPage() {
   const [name, setName] = useState("");
   const [date, setDate] = useState("");
   const [busCount, setBusCount] = useState(1);
-  const [plannedSessions, setPlannedSessions] = useState<string[]>([]);
-  const [newSessionName, setNewSessionName] = useState("");
+  const [plannedSessions, setPlannedSessions] = useState<PlannedSessions>({ outbound: [], return: [] });
+  const [newSessionNames, setNewSessionNames] = useState<Record<TripLeg, string>>({
+    outbound: "",
+    return: "",
+  });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -30,20 +39,20 @@ export default function EditTripPage() {
       setName(data.name);
       setDate(data.date);
       setBusCount(data.busCount);
-      setPlannedSessions(data.plannedSessions ?? []);
+      setPlannedSessions(normalizePlannedSessions(data.plannedSessions));
     });
     return () => unsub();
   }, [tripId]);
 
-  function handleAddSession() {
-    const value = newSessionName.trim();
-    if (!value || plannedSessions.includes(value)) return;
-    setPlannedSessions((list) => [...list, value]);
-    setNewSessionName("");
+  function handleAddSession(leg: TripLeg) {
+    const value = newSessionNames[leg].trim();
+    if (!value || plannedSessions[leg].includes(value)) return;
+    setPlannedSessions((p) => ({ ...p, [leg]: [...p[leg], value] }));
+    setNewSessionNames((n) => ({ ...n, [leg]: "" }));
   }
 
-  function handleRemoveSession(value: string) {
-    setPlannedSessions((list) => list.filter((s) => s !== value));
+  function handleRemoveSession(leg: TripLeg, value: string) {
+    setPlannedSessions((p) => ({ ...p, [leg]: p[leg].filter((s) => s !== value) }));
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -106,53 +115,55 @@ export default function EditTripPage() {
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
         />
       </div>
-      <div className="space-y-2">
-        <label className="text-sm text-gray-600">
-          點名場次規劃(各車領隊點名頁會依此清單一鍵開場次,確保全部車輛場次名稱一致)
-        </label>
-        <div className="flex gap-2">
-          <input
-            placeholder="例如:去程上車"
-            value={newSessionName}
-            onChange={(e) => setNewSessionName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleAddSession();
-              }
-            }}
-            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
-          />
-          <button
-            type="button"
-            onClick={handleAddSession}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-          >
-            新增場次
-          </button>
-        </div>
-        {plannedSessions.length === 0 ? (
-          <p className="text-xs text-gray-400">尚未規劃場次,各車領隊仍可在點名頁自行輸入場次名稱。</p>
-        ) : (
-          <ul className="flex flex-wrap gap-2">
-            {plannedSessions.map((s, i) => (
-              <li
-                key={s}
-                className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600"
-              >
-                {i + 1}. {s}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveSession(s)}
-                  className="text-gray-400 hover:text-red-500"
+      {(["outbound", "return"] as TripLeg[]).map((leg) => (
+        <div key={leg} className="space-y-2">
+          <label className="text-sm text-gray-600">
+            {LEG_LABELS[leg]}點名場次規劃(各車領隊點名頁開新場次時,選這段就會列出這裡的名稱)
+          </label>
+          <div className="flex gap-2">
+            <input
+              placeholder={leg === "outbound" ? "例如:上車" : "例如:返程前"}
+              value={newSessionNames[leg]}
+              onChange={(e) => setNewSessionNames((n) => ({ ...n, [leg]: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleAddSession(leg);
+                }
+              }}
+              className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => handleAddSession(leg)}
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            >
+              新增場次
+            </button>
+          </div>
+          {plannedSessions[leg].length === 0 ? (
+            <p className="text-xs text-gray-400">尚未規劃場次,各車領隊仍可在點名頁自行輸入場次名稱。</p>
+          ) : (
+            <ul className="flex flex-wrap gap-2">
+              {plannedSessions[leg].map((s, i) => (
+                <li
+                  key={s}
+                  className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600"
                 >
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+                  {i + 1}. {s}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSession(leg, s)}
+                    className="text-gray-400 hover:text-red-500"
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ))}
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex gap-2">
         <button

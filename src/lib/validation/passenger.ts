@@ -24,12 +24,15 @@ export const upsertPassengerSchema = z.object({
     .transform((v) => (v ? normalizeTaiwanMobile(v) : v)),
   busId: z.string().trim().nullable().optional(),
   returnBusId: z.string().trim().nullable().optional(),
+  busGroup: z.string().trim().optional(),
   lodgingInfo: z.string().trim().optional(),
 });
 
 export const reassignBusSchema = z.object({
-  leg: z.enum(["outbound", "return"]),
-  busId: z.string().trim().nullable(),
+  leg: z.enum(["outbound", "return"]).optional(),
+  busId: z.string().trim().nullable().optional(),
+  /** 車內組別(例如小客車車號),與 leg/busId 的更新各自獨立,任一個有帶就更新那個 */
+  busGroup: z.string().trim().nullable().optional(),
 });
 
 export const bulkReassignSchema = z.object({
