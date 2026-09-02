@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { globalSuperLeadLabel } from "@/types/role";
+import { OnlineStatusBanner } from "@/components/OnlineStatusBanner";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, role, loading, signOut } = useAuth();
@@ -20,6 +21,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen">
+      <OnlineStatusBanner />
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <Link href="/trips" className="font-semibold">
@@ -29,6 +31,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {role?.globalSuperLead && (
               <Link href="/accounts" className="text-brand-600">
                 帳號管理
+              </Link>
+            )}
+            {role?.globalSuperLead && (
+              <Link href="/audit" className="text-brand-600">
+                操作紀錄
               </Link>
             )}
             <span>{role?.displayName ? `${role.displayName}(${user.email})` : user.email}</span>

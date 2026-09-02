@@ -4,18 +4,31 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import clsx from "clsx";
-import { collection, getCountFromServer, onSnapshot, orderBy, query, where } from "firebase/firestore";
+import * as XLSX from "xlsx";
+import { collection, doc, getCountFromServer, getDoc, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
 import { apiFetch } from "@/lib/api/client";
 import type { Bus } from "@/types/bus";
-import type { PassengerListItem } from "@/types/passenger";
+import type { PassengerIdentity, PassengerListItem, TripLeg } from "@/types/passenger";
 import type { AttendanceStatus, RollCall } from "@/types/rollcall";
+import type { Trip } from "@/types/trip";
+
+const LEG_LABELS: Record<TripLeg, string> = {
+  outbound: "去程",
+  return: "回程",
+};
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
   present: "已到",
   absent: "未到",
   leave: "請假",
+};
+
+const IDENTITY_LABELS: Record<PassengerIdentity, string> = {
+  guest: "貴賓",
+  believer: "信眾",
+  volunteer: "義工",
 };
 
 const STATUS_STYLES: Record<AttendanceStatus, string> = {
@@ -33,6 +46,9 @@ export default function TripDashboardPage() {
   const [assignedCounts, setAssignedCounts] = useState<Record<string, number>>({});
   const [rosterByBus, setRosterByBus] = useState<Record<string, PassengerListItem[]>>({});
   const [expandedBusId, setExpandedBusId] = useState<string | null>(null);
+  const [activeLeg, setActiveLeg] = useState<TripLeg>("outbound");
+  const busIdField = activeLeg === "return" ? "returnBusId" : "busId";
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const q = query(collection(getDb(), "trips", tripId, "buses"), orderBy("busNumber"));
@@ -54,7 +70,7 @@ export default function TripDashboardPage() {
     const entries = await Promise.all(
       buses.map(async (bus) => {
         const snap = await getCountFromServer(
-          query(collection(getDb(), "trips", tripId, "passengers"), where("busId", "==", bus.id)),
+          query(collection(getDb(), "trips", tripId, "passengers"), where(busIdField, "==", bus.id)),
         );
         return [bus.id, snap.data().count] as const;
       }),
@@ -65,16 +81,23 @@ export default function TripDashboardPage() {
   useEffect(() => {
     if (buses.length > 0) refreshAssignedCounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [buses.map((b) => b.id).join(",")]);
+  }, [buses.map((b) => b.id).join(","), busIdField]);
+
+  // 換去程/回程時,展開的名單是另一段的資料,收合並清快取避免顯示錯段。
+  useEffect(() => {
+    setExpandedBusId(null);
+    setRosterByBus({});
+  }, [activeLeg]);
 
   const latestByBus = useMemo(() => {
     const map = new Map<string, RollCall>();
     for (const rc of rollcalls) {
+      if ((rc.leg ?? "outbound") !== activeLeg) continue;
       const current = map.get(rc.busId);
       if (!current || rc.createdAt > current.createdAt) map.set(rc.busId, rc);
     }
     return map;
-  }, [rollcalls]);
+  }, [rollcalls, activeLeg]);
 
   const visibleBuses = access.isSuperLead ? buses : buses.filter((b) => access.canAccessBus(b.id));
 
@@ -87,7 +110,7 @@ export default function TripDashboardPage() {
     if (!rosterByBus[busId]) {
       try {
         const items = await apiFetch<PassengerListItem[]>(
-          `/api/trips/${tripId}/passengers?busId=${busId}`,
+          `/api/trips/${tripId}/passengers?busId=${busId}&leg=${activeLeg}`,
         );
         setRosterByBus((prev) => ({ ...prev, [busId]: items }));
       } catch {
@@ -96,9 +119,94 @@ export default function TripDashboardPage() {
     }
   }
 
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const [tripSnap, passengers] = await Promise.all([
+        getDoc(doc(getDb(), "trips", tripId)),
+        apiFetch<PassengerListItem[]>(`/api/trips/${tripId}/passengers`),
+      ]);
+      const tripName = tripSnap.exists() ? (tripSnap.data() as Trip).name : tripId;
+      const busNumberById = new Map(buses.map((b) => [b.id, b.busNumber]));
+
+      const passengerRows = passengers.map((p) => ({
+        報名序號: p.regNo,
+        姓名: p.name,
+        法名: p.dharmaName ?? "",
+        身分別: IDENTITY_LABELS[p.identity],
+        義工組別: p.volunteerGroup ?? "",
+        去程車次: (p.busId && busNumberById.get(p.busId)) ?? (p.busId ? p.busId : "未分配"),
+        回程車次: (p.returnBusId && busNumberById.get(p.returnBusId)) ?? (p.returnBusId ? p.returnBusId : "未分配"),
+        組別: p.busGroup ?? "",
+        寮房資訊: p.lodgingInfo ?? "",
+        緊急聯絡人姓名: p.emergencyContactName ?? "",
+      }));
+
+      // 點名紀錄用長格式(每個場次每個人一列),方便日後查核誰在哪個場次被誰標記、什麼時間標記。
+      const nameById = new Map(passengers.map((p) => [p.id, p.name]));
+      const regNoById = new Map(passengers.map((p) => [p.id, p.regNo]));
+      const rollcallRows: Record<string, string>[] = [];
+      for (const rc of rollcalls) {
+        const busNumber = busNumberById.get(rc.busId) ?? rc.busId;
+        for (const [passengerId, record] of Object.entries(rc.records)) {
+          rollcallRows.push({
+            車次: busNumber,
+            去回程: LEG_LABELS[rc.leg ?? "outbound"],
+            場次: rc.sessionName,
+            姓名: nameById.get(passengerId) ?? passengerId,
+            報名序號: regNoById.get(passengerId) ?? "",
+            狀態: STATUS_LABELS[record.status],
+            點名時間: new Date(record.timestamp).toLocaleString("zh-TW", { hour12: false }),
+            方式: record.source === "qr" ? "QR 掃描" : "手動",
+          });
+        }
+      }
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(passengerRows), "人員名單");
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.json_to_sheet(rollcallRows.length > 0 ? rollcallRows : [{ 說明: "尚無點名紀錄" }]),
+        "點名紀錄",
+      );
+      XLSX.writeFile(workbook, `${tripName}_點名報表.xlsx`);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "匯出失敗");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div className="space-y-3">
-      <h2 className="text-sm font-medium text-gray-500">各車即時完成度(最新場次)</h2>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          {(["outbound", "return"] as TripLeg[]).map((leg) => (
+            <button
+              key={leg}
+              onClick={() => setActiveLeg(leg)}
+              className={clsx(
+                "rounded-full px-3 py-1 text-sm font-medium",
+                activeLeg === leg ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600",
+              )}
+            >
+              {LEG_LABELS[leg]}
+            </button>
+          ))}
+        </div>
+        {access.isSuperLead && (
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm disabled:opacity-60"
+          >
+            {exporting ? "匯出中…" : "匯出報表"}
+          </button>
+        )}
+      </div>
+      <h2 className="text-sm font-medium text-gray-500">
+        各車即時完成度({LEG_LABELS[activeLeg]}・最新場次)
+      </h2>
       {visibleBuses.length === 0 ? (
         <p className="text-sm text-gray-400">尚無可查看的車輛。</p>
       ) : (

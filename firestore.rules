@@ -76,15 +76,17 @@ service cloud.firestore {
           && request.resource.data.createdBy == request.auth.uid
           && request.resource.data.tripId == tripId;
 
+        // sessionName 改名跟建立場次一樣限總負責人/總領隊;一般領隊點名時不會動到 sessionName,天然滿足這個條件。
         allow update: if (isTripSuperLead(tripId) || canAccessBus(tripId, resource.data.busId))
           && tripStatus(tripId) != 'archived'
           && request.resource.data.busId == resource.data.busId
-          && request.resource.data.createdBy == resource.data.createdBy;
+          && request.resource.data.createdBy == resource.data.createdBy
+          && (isTripSuperLead(tripId) || request.resource.data.sessionName == resource.data.sessionName);
 
-        allow delete: if false;
+        allow delete: if isTripSuperLead(tripId) && tripStatus(tripId) != 'archived';
       }
 
-      // Phase 2(規格書 §5.4 廣播訊息):型別/讀取權限先備妥,寫入 API 尚未實作。
+      // 規格書 §5.4 廣播訊息:寫入走 /api/trips/{tripId}/broadcasts(Admin SDK,超領隊限定),client 只讀。
       match /broadcasts/{broadcastId} {
         allow read: if hasAnyRoleInTrip(tripId);
         allow write: if false;

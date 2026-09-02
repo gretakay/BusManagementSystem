@@ -6,6 +6,7 @@ import clsx from "clsx";
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   onSnapshot,
   orderBy,
@@ -92,10 +93,36 @@ export default function BusRollCallPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeLeg, rollcalls]);
 
+  const [rosterIsCached, setRosterIsCached] = useState(false);
+
+  // 名單是打 API 拿(權限/組別過濾要在後端做),不像 rollcalls 走 Firestore SDK 能自動離線快取,
+  // 離線或訊號不好時打不到 API 會整個開天窗;所以另外用 localStorage 存一份上次成功抓到的名單當備援。
   useEffect(() => {
+    const cacheKey = `rollcall-roster:${tripId}:${busId}:${activeLeg}`;
     apiFetch<PassengerListItem[]>(`/api/trips/${tripId}/passengers?busId=${busId}&leg=${activeLeg}`)
-      .then(setRoster)
-      .catch(() => setRoster([]));
+      .then((items) => {
+        setRoster(items);
+        setRosterIsCached(false);
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(items));
+        } catch {
+          // 儲存空間不足或瀏覽器擋存取,略過快取即可,不影響本次點名
+        }
+      })
+      .catch(() => {
+        try {
+          const cached = localStorage.getItem(cacheKey);
+          if (cached) {
+            setRoster(JSON.parse(cached) as PassengerListItem[]);
+            setRosterIsCached(true);
+            return;
+          }
+        } catch {
+          // 快取讀取失敗,視為沒有快取
+        }
+        setRoster([]);
+        setRosterIsCached(false);
+      });
   }, [tripId, busId, activeLeg]);
 
   useEffect(() => {
@@ -136,6 +163,23 @@ export default function BusRollCallPage() {
     if (!name) return;
     await createSession(name, activeLeg);
     setNewSessionName("");
+  }
+
+  async function handleRenameSession() {
+    if (!selected) return;
+    const nextName = prompt("重新命名場次", selected.sessionName)?.trim();
+    if (!nextName || nextName === selected.sessionName) return;
+    if (rollcalls.some((r) => r.id !== selected.id && r.sessionName === nextName && (r.leg ?? "outbound") === activeLeg)) {
+      alert(`「${nextName}」在${LEG_LABELS[activeLeg]}已經有場次使用這個名稱了`);
+      return;
+    }
+    await updateDoc(doc(getDb(), "trips", tripId, "rollcalls", selected.id), { sessionName: nextName });
+  }
+
+  async function handleDeleteSession() {
+    if (!selected) return;
+    if (!confirm(`確定要刪除場次「${selected.sessionName}」嗎?這個場次的點名紀錄會一併刪除,無法復原。`)) return;
+    await deleteDoc(doc(getDb(), "trips", tripId, "rollcalls", selected.id));
   }
 
   const pendingPlannedSessions = plannedSessions[activeLeg].filter(
@@ -242,6 +286,11 @@ export default function BusRollCallPage() {
       {access.getBusGroupTag(busId) && (
         <p className="text-sm text-brand-700">你負責的組別:{access.getBusGroupTag(busId)}(只看得到本組人員)</p>
       )}
+      {rosterIsCached && (
+        <p className="text-sm text-amber-600">
+          ⚠ 目前顯示上次連線時儲存的名單快取,可能不是最新的;點名結果仍會正常記錄,恢復連線後建議重新整理確認名單。
+        </p>
+      )}
 
       <div className="space-y-2 rounded-lg border border-gray-200 bg-white p-3">
         <div className="flex items-center gap-2 text-sm">
@@ -287,6 +336,24 @@ export default function BusRollCallPage() {
               </option>
             ))}
           </select>
+          {access.isSuperLead && selected && (
+            <>
+              <button
+                onClick={handleRenameSession}
+                className="rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-600"
+                title="重新命名場次"
+              >
+                改名
+              </button>
+              <button
+                onClick={handleDeleteSession}
+                className="rounded-md border border-red-300 px-2 py-1.5 text-sm text-red-600"
+                title="刪除場次"
+              >
+                刪除
+              </button>
+            </>
+          )}
         </div>
         {access.isSuperLead && (
           <div className="flex items-center gap-2">
