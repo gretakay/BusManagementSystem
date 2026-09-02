@@ -7,10 +7,12 @@ import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { apiFetch } from "@/lib/api/client";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
+import { Pagination } from "@/components/Pagination";
 import type { Bus } from "@/types/bus";
 import type { PassengerIdentity, PassengerListItem, TripLeg } from "@/types/passenger";
 
 const UNASSIGNED = "__unassigned__";
+const PAGE_SIZE = 50;
 
 const LEG_LABELS: Record<TripLeg, string> = {
   outbound: "去程",
@@ -45,6 +47,7 @@ export default function SeatingPage() {
   const [bulkTargetBusId, setBulkTargetBusId] = useState("");
   const [bulkApplying, setBulkApplying] = useState(false);
   const [groupDrafts, setGroupDrafts] = useState<Record<string, string>>({});
+  const [page, setPage] = useState(1);
 
   const busIdField = leg === "return" ? "returnBusId" : "busId";
 
@@ -165,6 +168,14 @@ export default function SeatingPage() {
     if (search && !p.name.includes(search) && !p.regNo.includes(search)) return false;
     return true;
   });
+
+  // 篩選條件一變,結果集就變了,回到第一頁避免停在超出範圍的空頁面。
+  useEffect(() => {
+    setPage(1);
+  }, [leg, filter, groupFilter, identityFilter, volunteerGroupFilter, search]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredPassengers.length / PAGE_SIZE));
+  const pagedPassengers = filteredPassengers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   function toggleSelected(id: string) {
     setSelectedIds((prev) => {
@@ -434,9 +445,9 @@ export default function SeatingPage() {
                 checked={filteredPassengers.length > 0 && filteredPassengers.every((p) => selectedIds.has(p.id))}
                 onChange={toggleSelectAllFiltered}
               />
-              全選目前篩選結果
+              全選目前篩選結果(共 {filteredPassengers.length} 人,不限本頁)
             </li>
-            {filteredPassengers.map((p) => (
+            {pagedPassengers.map((p) => (
               <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-2 text-sm">
                 <label className="flex flex-1 items-center gap-3">
                   <input
@@ -478,6 +489,7 @@ export default function SeatingPage() {
             ))}
           </ul>
         )}
+        <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />
       </div>
     </div>
   );

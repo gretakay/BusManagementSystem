@@ -7,6 +7,7 @@ import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { apiFetch } from "@/lib/api/client";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
+import { Pagination } from "@/components/Pagination";
 import type { Bus } from "@/types/bus";
 import type { BusRole } from "@/types/role";
 
@@ -15,6 +16,8 @@ const ROLE_LABELS: Record<BusRole, string> = {
   coLeader: "副領隊",
   groupLeader: "小組長",
 };
+
+const PAGE_SIZE = 50;
 
 export default function BusesPage() {
   const { tripId } = useParams<{ tripId: string }>();
@@ -27,6 +30,8 @@ export default function BusesPage() {
     driverPhone: "",
     seatCapacity: 40,
   });
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const q = query(collection(getDb(), "trips", tripId, "buses"), orderBy("busNumber"));
@@ -49,6 +54,16 @@ export default function BusesPage() {
       setCreating(false);
     }
   }
+
+  const filteredBuses = buses.filter(
+    (b) => !search || b.busNumber.includes(search) || (b.driverName ?? "").includes(search),
+  );
+  const pageCount = Math.max(1, Math.ceil(filteredBuses.length / PAGE_SIZE));
+  const pagedBuses = filteredBuses.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
 
   if (!access.isSuperLead) {
     return <p className="text-sm text-red-600">你沒有權限查看此行程的車輛管理。</p>;
@@ -106,34 +121,52 @@ export default function BusesPage() {
         </button>
       </form>
 
-      <ul className="space-y-3">
-        {buses.map((bus) => (
-          <li key={bus.id} className="rounded-lg border border-gray-200 bg-white p-4">
-            <p className="font-medium">
-              {bus.busNumber}(座位上限 {bus.seatCapacity})
-            </p>
-            {bus.driverName && (
-              <p className="mt-1 text-sm text-gray-500">
-                司機:{bus.driverName} {bus.driverPhone}
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-sm font-medium text-gray-500">
+          車輛清單({filteredBuses.length}
+          {filteredBuses.length !== buses.length ? ` / 共 ${buses.length}` : ""})
+        </h2>
+        <input
+          placeholder="搜尋車次或司機姓名"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full max-w-xs rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+        />
+      </div>
+
+      {filteredBuses.length === 0 ? (
+        <p className="text-sm text-gray-400">沒有符合條件的車輛。</p>
+      ) : (
+        <ul className="space-y-3">
+          {pagedBuses.map((bus) => (
+            <li key={bus.id} className="rounded-lg border border-gray-200 bg-white p-4">
+              <p className="font-medium">
+                {bus.busNumber}(座位上限 {bus.seatCapacity})
               </p>
-            )}
-            <ul className="mt-2 flex flex-wrap gap-2">
-              {bus.leaders.length === 0 ? (
-                <li className="text-xs text-gray-400">尚未指派</li>
-              ) : (
-                bus.leaders.map((l) => (
-                  <li
-                    key={l.uid}
-                    className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600"
-                  >
-                    {ROLE_LABELS[l.role]}:{l.displayName ? `${l.displayName}(${l.email})` : l.email}
-                  </li>
-                ))
+              {bus.driverName && (
+                <p className="mt-1 text-sm text-gray-500">
+                  司機:{bus.driverName} {bus.driverPhone}
+                </p>
               )}
-            </ul>
-          </li>
-        ))}
-      </ul>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {bus.leaders.length === 0 ? (
+                  <li className="text-xs text-gray-400">尚未指派</li>
+                ) : (
+                  bus.leaders.map((l) => (
+                    <li
+                      key={l.uid}
+                      className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600"
+                    >
+                      {ROLE_LABELS[l.role]}:{l.displayName ? `${l.displayName}(${l.email})` : l.email}
+                    </li>
+                  ))
+                )}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />
     </div>
   );
 }

@@ -5,12 +5,15 @@ import { useParams } from "next/navigation";
 import * as XLSX from "xlsx";
 import { apiFetch } from "@/lib/api/client";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
+import { Pagination } from "@/components/Pagination";
 import type {
   ImportPassengersResult,
   PassengerIdentity,
   PassengerListItem,
   UpsertPassengerInput,
 } from "@/types/passenger";
+
+const PAGE_SIZE = 50;
 
 const IDENTITY_LABELS: Record<PassengerIdentity, string> = {
   guest: "貴賓",
@@ -62,6 +65,8 @@ export default function PassengersPage() {
   const [importResult, setImportResult] = useState<ImportPassengersResult | null>(null);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   const loadPassengers = useCallback(async () => {
     setLoading(true);
@@ -156,6 +161,16 @@ export default function PassengersPage() {
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
+
+  const filteredPassengers = passengers.filter(
+    (p) => !search || p.name.includes(search) || p.regNo.includes(search),
+  );
+  const pageCount = Math.max(1, Math.ceil(filteredPassengers.length / PAGE_SIZE));
+  const pagedPassengers = filteredPassengers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
 
   if (!access.isSuperLead) {
     return <p className="text-sm text-red-600">你沒有權限查看此行程的人員管理。</p>;
@@ -300,11 +315,22 @@ export default function PassengersPage() {
       </form>
 
       <div className="rounded-lg border border-gray-200 bg-white">
-        <h2 className="border-b border-gray-100 px-4 py-2 text-sm font-medium text-gray-500">
-          人員清單({passengers.length})
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 px-4 py-2">
+          <h2 className="text-sm font-medium text-gray-500">
+            人員清單({filteredPassengers.length}
+            {filteredPassengers.length !== passengers.length ? ` / 共 ${passengers.length}` : ""})
+          </h2>
+          <input
+            placeholder="搜尋姓名或報名序號"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full max-w-xs rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+          />
+        </div>
         {loading ? (
           <p className="p-4 text-sm text-gray-400">載入中…</p>
+        ) : filteredPassengers.length === 0 ? (
+          <p className="p-4 text-sm text-gray-400">沒有符合條件的人員。</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -319,7 +345,7 @@ export default function PassengersPage() {
                 </tr>
               </thead>
               <tbody>
-                {passengers.map((p) => (
+                {pagedPassengers.map((p) => (
                   <tr key={p.id} className="border-t border-gray-100">
                     <td className="px-4 py-2">{p.regNo}</td>
                     <td className="px-4 py-2">{p.name}</td>
@@ -333,6 +359,7 @@ export default function PassengersPage() {
             </table>
           </div>
         )}
+        <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />
       </div>
     </div>
   );

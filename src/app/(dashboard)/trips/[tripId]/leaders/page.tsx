@@ -8,6 +8,7 @@ import { apiFetch } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
 import { EmailAutocomplete, type EmailOption } from "@/components/trip/EmailAutocomplete";
+import { Pagination } from "@/components/Pagination";
 import type { Bus } from "@/types/bus";
 import type { BusRole } from "@/types/role";
 import type { Trip } from "@/types/trip";
@@ -18,6 +19,8 @@ const ROLE_LABELS: Record<BusRole, string> = {
   coLeader: "副領隊",
   groupLeader: "小組長",
 };
+
+const PAGE_SIZE = 50;
 
 export default function TripLeadersPage() {
   const { tripId } = useParams<{ tripId: string }>();
@@ -44,6 +47,9 @@ export default function TripLeadersPage() {
   const [resetPasswordValue, setResetPasswordValue] = useState("");
   const [resetSubmitting, setResetSubmitting] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
+
+  const [busSearch, setBusSearch] = useState("");
+  const [busPage, setBusPage] = useState(1);
 
   useEffect(() => {
     if (!authRole?.globalSuperLead) return;
@@ -175,6 +181,14 @@ export default function TripLeadersPage() {
       setResetSubmitting(false);
     }
   }
+
+  const filteredBuses = buses.filter((b) => !busSearch || b.busNumber.includes(busSearch));
+  const busPageCount = Math.max(1, Math.ceil(filteredBuses.length / PAGE_SIZE));
+  const pagedBuses = filteredBuses.slice((busPage - 1) * PAGE_SIZE, busPage * PAGE_SIZE);
+
+  useEffect(() => {
+    setBusPage(1);
+  }, [busSearch]);
 
   if (!access.isSuperLead) {
     return <p className="text-sm text-red-600">你沒有權限管理此行程的領隊指派。</p>;
@@ -346,12 +360,25 @@ export default function TripLeadersPage() {
       </form>
 
       <div className="space-y-3">
-        <h2 className="text-sm font-medium text-gray-500">目前指派總覽</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-medium text-gray-500">
+            目前指派總覽({filteredBuses.length}
+            {filteredBuses.length !== buses.length ? ` / 共 ${buses.length}` : ""})
+          </h2>
+          <input
+            placeholder="搜尋車次"
+            value={busSearch}
+            onChange={(e) => setBusSearch(e.target.value)}
+            className="w-full max-w-xs rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+          />
+        </div>
         {buses.length === 0 ? (
           <p className="text-sm text-gray-400">尚無車輛,請先到車輛管理新增。</p>
+        ) : filteredBuses.length === 0 ? (
+          <p className="text-sm text-gray-400">沒有符合條件的車輛。</p>
         ) : (
           <ul className="space-y-3">
-            {buses.map((bus) => (
+            {pagedBuses.map((bus) => (
               <li key={bus.id} className="rounded-lg border border-gray-200 bg-white p-4">
                 <p className="font-medium">{bus.busNumber}</p>
                 {bus.leaders.length === 0 ? (
@@ -389,6 +416,7 @@ export default function TripLeadersPage() {
             ))}
           </ul>
         )}
+        <Pagination page={busPage} pageCount={busPageCount} onPageChange={setBusPage} />
       </div>
     </div>
   );
