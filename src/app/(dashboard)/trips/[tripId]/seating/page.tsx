@@ -38,6 +38,8 @@ export default function SeatingPage() {
   const [leg, setLeg] = useState<TripLeg>("outbound");
   const [filter, setFilter] = useState<string>("");
   const [groupFilter, setGroupFilter] = useState<string>("");
+  const [identityFilter, setIdentityFilter] = useState<PassengerIdentity | "">("");
+  const [volunteerGroupFilter, setVolunteerGroupFilter] = useState<string>("");
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkTargetBusId, setBulkTargetBusId] = useState("");
@@ -80,6 +82,11 @@ export default function SeatingPage() {
     setGroupFilter("");
   }, [filter]);
 
+  // 切換身分別時,底下的義工組別子篩選也要重置。
+  useEffect(() => {
+    setVolunteerGroupFilter("");
+  }, [identityFilter]);
+
   const counts = useMemo(() => {
     const map = new Map<string, number>();
     let unassigned = 0;
@@ -90,6 +97,20 @@ export default function SeatingPage() {
     }
     return { byBus: map, unassigned };
   }, [passengers, busIdField]);
+
+  const identityCounts = useMemo(() => {
+    const map = new Map<PassengerIdentity, number>();
+    for (const p of passengers) map.set(p.identity, (map.get(p.identity) ?? 0) + 1);
+    return map;
+  }, [passengers]);
+
+  const volunteerGroups = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of passengers) {
+      if (p.identity === "volunteer" && p.volunteerGroup) set.add(p.volunteerGroup);
+    }
+    return Array.from(set).sort();
+  }, [passengers]);
 
   async function handleReassign(passengerId: string, busId: string) {
     const nextBusId = busId === "" ? null : busId;
@@ -139,6 +160,8 @@ export default function SeatingPage() {
     if (filter === UNASSIGNED && busId) return false;
     if (filter && filter !== UNASSIGNED && busId !== filter) return false;
     if (groupFilter && p.busGroup !== groupFilter) return false;
+    if (identityFilter && p.identity !== identityFilter) return false;
+    if (volunteerGroupFilter && p.volunteerGroup !== volunteerGroupFilter) return false;
     if (search && !p.name.includes(search) && !p.regNo.includes(search)) return false;
     return true;
   });
@@ -247,7 +270,60 @@ export default function SeatingPage() {
             「組別」欄位可標記車內小組(例如小客車車號),搭配該車小組長的指派可只看自己組別,去回程共用同一個組別。
           </p>
 
-          <div className="flex flex-wrap gap-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-gray-400">身分別:</span>
+            <button
+              onClick={() => setIdentityFilter("")}
+              className={clsx(
+                "rounded-full px-3 py-1",
+                identityFilter === "" ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600",
+              )}
+            >
+              全部
+            </button>
+            {(Object.keys(IDENTITY_LABELS) as PassengerIdentity[]).map((id) => (
+              <button
+                key={id}
+                onClick={() => setIdentityFilter((f) => (f === id ? "" : id))}
+                className={clsx(
+                  "rounded-full px-3 py-1",
+                  identityFilter === id ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600",
+                )}
+              >
+                {IDENTITY_LABELS[id]}({identityCounts.get(id) ?? 0})
+              </button>
+            ))}
+          </div>
+
+          {identityFilter === "volunteer" && volunteerGroups.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-gray-400">義工組別:</span>
+              <button
+                onClick={() => setVolunteerGroupFilter("")}
+                className={clsx(
+                  "rounded-full px-3 py-1",
+                  volunteerGroupFilter === "" ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600",
+                )}
+              >
+                全部組別
+              </button>
+              {volunteerGroups.map((g) => (
+                <button
+                  key={g}
+                  onClick={() => setVolunteerGroupFilter((f) => (f === g ? "" : g))}
+                  className={clsx(
+                    "rounded-full px-3 py-1",
+                    volunteerGroupFilter === g ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600",
+                  )}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-gray-400">車次:</span>
             <button
               onClick={() => setFilter("")}
               className={clsx(
