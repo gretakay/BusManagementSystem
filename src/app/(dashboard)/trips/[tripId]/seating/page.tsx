@@ -45,6 +45,7 @@ export default function SeatingPage() {
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkTargetBusId, setBulkTargetBusId] = useState("");
+  const [bulkTargetGroup, setBulkTargetGroup] = useState("");
   const [bulkApplying, setBulkApplying] = useState(false);
   const [groupDrafts, setGroupDrafts] = useState<Record<string, string>>({});
   const [page, setPage] = useState(1);
@@ -208,11 +209,18 @@ export default function SeatingPage() {
     try {
       await apiFetch(`/api/trips/${tripId}/passengers/bulk-reassign`, {
         method: "POST",
-        body: JSON.stringify({ passengerIds: ids, leg, busId: nextBusId }),
+        body: JSON.stringify({
+          passengerIds: ids,
+          leg,
+          busId: nextBusId,
+          // 組別欄位留空表示這次批次指派不動組別,只改車次;有填才會一併套用(常見於指派小車時順便標記車號)。
+          ...(bulkTargetGroup ? { busGroup: bulkTargetGroup } : {}),
+        }),
       });
       // 去程批次指派時,回程可能依人各自不同步(未設定過才會跟著同步),不能用單一值樂觀更新,直接重新讀取。
       await loadPassengers();
       setSelectedIds(new Set());
+      setBulkTargetGroup("");
     } catch (err) {
       alert(err instanceof Error ? err.message : "批次指派失敗");
     } finally {
@@ -418,6 +426,12 @@ export default function SeatingPage() {
                   </option>
                 ))}
               </select>
+              <input
+                placeholder="組別(選填,例如小客車車號)"
+                value={bulkTargetGroup}
+                onChange={(e) => setBulkTargetGroup(e.target.value)}
+                className="w-44 rounded-md border border-gray-300 px-2 py-1 text-sm"
+              />
               <button
                 onClick={handleBulkApply}
                 disabled={bulkApplying}

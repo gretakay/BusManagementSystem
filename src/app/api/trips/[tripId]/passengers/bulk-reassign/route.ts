@@ -19,7 +19,7 @@ export async function POST(req: NextRequest, { params }: { params: { tripId: str
     const user = await requireUser(req);
     requireTripSuperLead(user, params.tripId);
 
-    const { passengerIds, leg, busId } = bulkReassignSchema.parse(await req.json());
+    const { passengerIds, leg, busId, busGroup } = bulkReassignSchema.parse(await req.json());
     const field = leg === "return" ? "returnBusId" : "busId";
 
     const db = getAdminDb();
@@ -44,6 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: { tripId: str
         if (returnBusIdByPassenger && returnBusIdByPassenger.get(id) == null) {
           update.returnBusId = busId;
         }
+        if (busGroup !== undefined) update.busGroup = busGroup;
         batch.update(col.doc(id), update);
         updatedCount += 1;
       }
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest, { params }: { params: { tripId: str
       action: "passenger.bulkReassign",
       tripId: params.tripId,
       targetType: "passenger",
-      detail: { passengerCount: updatedCount, leg, busId },
+      detail: { passengerCount: updatedCount, leg, busId, busGroup },
     });
 
     return NextResponse.json({ updatedCount });

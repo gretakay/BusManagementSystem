@@ -31,6 +31,8 @@ export const bulkReassignSchema = z.object({
   passengerIds: z.array(z.string().trim().min(1)).min(1, "請至少選擇一位人員"),
   leg: z.enum(["outbound", "return"]),
   busId: z.string().trim().nullable(),
+  /** 車內組別(例如小客車車號);留空(undefined)表示這次批次指派不動組別,只改車次 */
+  busGroup: z.string().trim().optional(),
 });
 
 /**
