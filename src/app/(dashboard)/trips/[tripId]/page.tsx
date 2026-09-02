@@ -59,12 +59,12 @@ export default function TripDashboardPage() {
   useEffect(() => {
     const col = collection(getDb(), "trips", tripId, "rollcalls");
     const q =
-      access.isSuperLead || access.assignedBusIds.length === 0
+      access.canViewAllBuses || access.assignedBusIds.length === 0
         ? query(col)
         : query(col, where("busId", "in", access.assignedBusIds.slice(0, 30)));
     const unsub = onSnapshot(q, (snap) => setRollcalls(snap.docs.map((d) => d.data() as RollCall)));
     return () => unsub();
-  }, [tripId, access.isSuperLead, access.assignedBusIds]);
+  }, [tripId, access.canViewAllBuses, access.assignedBusIds]);
 
   async function refreshAssignedCounts() {
     const entries = await Promise.all(
@@ -99,7 +99,7 @@ export default function TripDashboardPage() {
     return map;
   }, [rollcalls, activeLeg]);
 
-  const visibleBuses = access.isSuperLead ? buses : buses.filter((b) => access.canAccessBus(b.id));
+  const visibleBuses = access.canViewAllBuses ? buses : buses.filter((b) => access.canAccessBus(b.id));
 
   async function handleToggleExpand(busId: string) {
     if (expandedBusId === busId) {

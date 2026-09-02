@@ -23,11 +23,22 @@ service cloud.firestore {
       return roleData().get('globalSuperLead', false) == true;
     }
 
+    // 全域總負責人/法師的權限等級是否為完整管理(非唯讀);未設定視為完整權限(相容舊資料)。
+    function isGlobalFullAccess() {
+      return isGlobalSuperLead() && roleData().get('globalAccessLevel', 'full') != 'readOnly';
+    }
+
     function tripAssignment(tripId) {
       return roleData().get('trips', {}).get(tripId, {});
     }
 
+    // 可「管理」此行程(寫入操作);全域唯讀法師不算,只能檢視。
     function isTripSuperLead(tripId) {
+      return isGlobalFullAccess() || tripAssignment(tripId).get('superLead', false) == true;
+    }
+
+    // 可「檢視」此行程全部資料;全域唯讀法師也算。
+    function canViewTrip(tripId) {
       return isGlobalSuperLead() || tripAssignment(tripId).get('superLead', false) == true;
     }
 
@@ -39,8 +50,12 @@ service cloud.firestore {
       return isTripSuperLead(tripId) || (busId in assignedBusIds(tripId));
     }
 
+    function canViewBus(tripId, busId) {
+      return canViewTrip(tripId) || (busId in assignedBusIds(tripId));
+    }
+
     function hasAnyRoleInTrip(tripId) {
-      return isTripSuperLead(tripId) || assignedBusIds(tripId).size() > 0;
+      return canViewTrip(tripId) || assignedBusIds(tripId).size() > 0;
     }
 
     function tripStatus(tripId) {
@@ -57,18 +72,18 @@ service cloud.firestore {
       allow write: if false;
 
       match /buses/{busId} {
-        allow read: if isTripSuperLead(tripId) || canAccessBus(tripId, busId);
+        allow read: if canViewBus(tripId, busId);
         allow write: if false;
       }
 
       match /passengers/{passengerId} {
-        allow read: if isTripSuperLead(tripId)
-          || (resource.data.busId != null && canAccessBus(tripId, resource.data.busId));
+        allow read: if canViewTrip(tripId)
+          || (resource.data.busId != null && canViewBus(tripId, resource.data.busId));
         allow write: if false;
       }
 
       match /rollcalls/{rollcallId} {
-        allow read: if isTripSuperLead(tripId) || canAccessBus(tripId, resource.data.busId);
+        allow read: if canViewTrip(tripId) || canViewBus(tripId, resource.data.busId);
 
         // 只有總負責人/該行程總領隊能「開新場次」(建立點名場次紀錄);一般車輛領隊只能在既有場次內點名(見下方 update)。
         allow create: if isTripSuperLead(tripId)

@@ -267,6 +267,10 @@ export default function BusRollCallPage() {
     return { total: roster.length, present, absent: roster.length - present - leave, leave };
   }, [roster, selected]);
 
+  // 全域唯讀法師 canAccessBus 會是 true(看得到名單),但 isSuperLead/assignedBusIds 都不含它,
+  // 藉此跟「真正能點名的人」(超領隊或本車有指派的領隊)分開,避免畫面上按鈕點了卻被 rules 擋掉。
+  const canMark = access.isSuperLead || access.assignedBusIds.includes(busId);
+
   const filteredRoster = roster.filter((p) => {
     const matchesSearch =
       p.name.includes(search) ||
@@ -285,6 +289,9 @@ export default function BusRollCallPage() {
       <h1 className="text-xl font-semibold">現場點名</h1>
       {access.getBusGroupTag(busId) && (
         <p className="text-sm text-brand-700">你負責的組別:{access.getBusGroupTag(busId)}(只看得到本組人員)</p>
+      )}
+      {!canMark && (
+        <p className="text-sm text-gray-500">目前是唯讀身分,可檢視名單與點名進度,但無法標記出席狀態或掃描 QR。</p>
       )}
       {rosterIsCached && (
         <p className="text-sm text-amber-600">
@@ -440,12 +447,14 @@ export default function BusRollCallPage() {
               onChange={(e) => setSearch(e.target.value)}
               className="flex-1 rounded-md border border-gray-300 px-3 py-2.5 text-base"
             />
-            <button
-              onClick={() => setScanning((s) => !s)}
-              className="rounded-md border border-gray-300 px-4 py-2.5 text-base font-medium"
-            >
-              {scanning ? "取消掃描" : "掃描 QR"}
-            </button>
+            {canMark && (
+              <button
+                onClick={() => setScanning((s) => !s)}
+                className="rounded-md border border-gray-300 px-4 py-2.5 text-base font-medium"
+              >
+                {scanning ? "取消掃描" : "掃描 QR"}
+              </button>
+            )}
           </div>
 
           {scanning && <QrScanner onDecode={handleQrDecode} onClose={() => setScanning(false)} />}
@@ -470,8 +479,9 @@ export default function BusRollCallPage() {
                         <button
                           key={status}
                           onClick={() => markStatus(p.id, status, "manual")}
+                          disabled={!canMark}
                           className={clsx(
-                            "rounded-md px-3 py-2 text-sm font-medium",
+                            "rounded-md px-3 py-2 text-sm font-medium disabled:opacity-40",
                             effectiveStatus === status ? STATUS_STYLES[status] : "bg-gray-100 text-gray-500",
                           )}
                         >
@@ -492,7 +502,7 @@ export default function BusRollCallPage() {
                         onClick={() => handleDial(p.id, "emergency")}
                         className="rounded-md bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700"
                       >
-                        撥打緊急聯絡人
+                        撥打緊急聯絡人{p.emergencyContactName ? `(${p.emergencyContactName})` : ""}
                       </button>
                     </div>
                   )}

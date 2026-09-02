@@ -4,7 +4,12 @@ import { handleApiError } from "@/lib/api/handleError";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 import { writeAuditLog } from "@/lib/audit";
 import { createAccountSchema } from "@/lib/validation/account";
-import { globalSuperLeadLabel, type GlobalSuperLeadTitle, type UserRoleDoc } from "@/types/role";
+import {
+  globalSuperLeadLabel,
+  type GlobalAccessLevel,
+  type GlobalSuperLeadTitle,
+  type UserRoleDoc,
+} from "@/types/role";
 
 export interface AccountListItem {
   uid: string;
@@ -12,6 +17,7 @@ export interface AccountListItem {
   createdAt: string;
   globalSuperLead: boolean;
   globalSuperLeadTitle: GlobalSuperLeadTitle | null;
+  globalAccessLevel: GlobalAccessLevel | null;
   displayName: string | null;
   loginPhone: string | null;
 }
@@ -43,6 +49,7 @@ export async function GET(req: NextRequest) {
         ...u,
         globalSuperLead: Boolean(roleDoc?.globalSuperLead),
         globalSuperLeadTitle: roleDoc?.globalSuperLead ? globalSuperLeadLabel(roleDoc) : null,
+        globalAccessLevel: roleDoc?.globalSuperLead ? (roleDoc.globalAccessLevel ?? "full") : null,
         displayName: roleDoc?.displayName ?? null,
         loginPhone: roleDoc?.loginPhone ?? null,
       };
@@ -103,6 +110,7 @@ export async function POST(req: NextRequest) {
       createdAt: created.metadata.creationTime,
       globalSuperLead: false,
       globalSuperLeadTitle: null,
+      globalAccessLevel: null,
       displayName: displayName ?? null,
       loginPhone: loginPhone ?? null,
     };

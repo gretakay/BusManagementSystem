@@ -401,6 +401,8 @@ export default function SeatingPage() {
             className="w-full max-w-xs rounded-md border border-gray-300 px-3 py-1.5 text-sm"
           />
 
+          <Pagination page={page} pageCount={pageCount} onPageChange={setPage} edge="top" />
+
           {selectedIds.size > 0 && (
             <div className="flex flex-wrap items-center gap-2 rounded-md bg-brand-50 px-3 py-2 text-sm">
               <span>已選 {selectedIds.size} 人</span>
@@ -489,7 +491,6 @@ export default function SeatingPage() {
             ))}
           </ul>
         )}
-        <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />
       </div>
     </div>
   );

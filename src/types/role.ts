@@ -6,8 +6,11 @@
 
 export type BusRole = "leader" | "coLeader" | "groupLeader";
 
-/** 全域總負責人的顯示頭銜,權限完全相同,純粹是給不同身分的人看的稱呼(例如朝山共修的「法師」)。 */
+/** 全域總負責人的顯示頭銜,純粹是給不同身分的人看的稱呼(例如朝山共修的「法師」),跟下面的權限等級各自獨立。 */
 export type GlobalSuperLeadTitle = "總負責人" | "法師";
+
+/** 全域總負責人的權限等級:full = 完整管理(預設,含舊資料),readOnly = 只能檢視所有行程,不能新增/編輯/刪除/指派/點名。 */
+export type GlobalAccessLevel = "full" | "readOnly";
 
 export interface BusRoleAssignment {
   role: BusRole;
@@ -27,6 +30,8 @@ export interface UserRoleDoc {
   globalSuperLead?: boolean;
   /** globalSuperLead 為 true 時的顯示頭銜,未設定時預設「總負責人」 */
   globalSuperLeadTitle?: GlobalSuperLeadTitle;
+  /** globalSuperLead 為 true 時的權限等級,未設定時視為 "full"(相容舊資料) */
+  globalAccessLevel?: GlobalAccessLevel;
   displayName?: string;
   email?: string;
   /** 登入用手機號碼(選填),登入頁可以打這個代替 email;實際 Firebase Auth 帳號仍以 email 為準 */
@@ -38,7 +43,24 @@ export function globalSuperLeadLabel(role: UserRoleDoc | null | undefined): Glob
   return role?.globalSuperLeadTitle ?? "總負責人";
 }
 
+/** 全域總負責人/法師是否為完整管理權限(非唯讀);globalSuperLead 為 false 時一律回傳 false。 */
+export function hasGlobalFullAccess(role: UserRoleDoc | null | undefined): boolean {
+  return Boolean(role?.globalSuperLead) && (role?.globalAccessLevel ?? "full") !== "readOnly";
+}
+
+export function isGlobalReadOnly(role: UserRoleDoc | null | undefined): boolean {
+  return Boolean(role?.globalSuperLead) && role?.globalAccessLevel === "readOnly";
+}
+
+/** 是否可「管理」此行程(指派領隊、編輯、點名、廣播等寫入操作);全域唯讀法師不算,只能檢視。 */
 export function isTripSuperLead(role: UserRoleDoc | null | undefined, tripId: string): boolean {
+  if (!role) return false;
+  if (hasGlobalFullAccess(role)) return true;
+  return Boolean(role.trips?.[tripId]?.superLead);
+}
+
+/** 是否可「檢視」此行程全部資料(所有車輛/人員/點名進度);全域唯讀法師也算,只是不能寫入。 */
+export function hasTripVisibility(role: UserRoleDoc | null | undefined, tripId: string): boolean {
   if (!role) return false;
   if (role.globalSuperLead) return true;
   return Boolean(role.trips?.[tripId]?.superLead);
@@ -64,7 +86,7 @@ export function canAccessBus(
   tripId: string,
   busId: string,
 ): boolean {
-  if (isTripSuperLead(role, tripId)) return true;
+  if (hasTripVisibility(role, tripId)) return true;
   return getAssignedBusIds(role, tripId).includes(busId);
 }
 
@@ -77,7 +99,7 @@ export function getBusGroupTag(
   tripId: string,
   busId: string,
 ): string | undefined {
-  if (isTripSuperLead(role, tripId)) return undefined;
+  if (hasTripVisibility(role, tripId)) return undefined;
   return normalizeBusRoleAssignment(role?.trips?.[tripId]?.busRoles?.[busId])?.groupTag;
 }
 
@@ -99,7 +121,9 @@ const BUS_ROLE_LABELS: Record<BusRole, string> = {
 /** 在行程列表等地方顯示「你的身分」摘要,不含車輛名稱(需要車輛名稱時另外用 busRoles 查對照)。 */
 export function tripRoleSummary(role: UserRoleDoc | null | undefined, tripId: string): string | null {
   if (!role) return null;
-  if (role.globalSuperLead) return `${globalSuperLeadLabel(role)}(全域)`;
+  if (role.globalSuperLead) {
+    return `${globalSuperLeadLabel(role)}(全域${isGlobalReadOnly(role) ? "・唯讀" : ""})`;
+  }
   const trip = role.trips?.[tripId];
   if (!trip) return null;
   if (trip.superLead) return "此行程總領隊";

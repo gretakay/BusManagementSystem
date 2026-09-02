@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { apiFetch } from "@/lib/api/client";
 import { Pagination } from "@/components/Pagination";
 import type { AccountListItem } from "@/app/api/accounts/route";
-import type { GlobalSuperLeadTitle } from "@/types/role";
+import type { GlobalAccessLevel, GlobalSuperLeadTitle } from "@/types/role";
 
 const PAGE_SIZE = 50;
 
@@ -36,6 +36,24 @@ export default function AccountsPage() {
   const [profileLoginPhone, setProfileLoginPhone] = useState("");
   const [profileSubmitting, setProfileSubmitting] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
+
+  /** 每個帳號在「授予/調整全域權限」表單裡目前選的稱謂/權限等級,預設沿用該帳號現有設定或初始值。 */
+  const [roleDrafts, setRoleDrafts] = useState<Record<string, { title: GlobalSuperLeadTitle; level: GlobalAccessLevel }>>(
+    {},
+  );
+
+  function getRoleDraft(acc: AccountListItem) {
+    return (
+      roleDrafts[acc.uid] ?? {
+        title: acc.globalSuperLeadTitle ?? "總負責人",
+        level: acc.globalAccessLevel ?? "full",
+      }
+    );
+  }
+
+  function setRoleDraft(acc: AccountListItem, patch: Partial<{ title: GlobalSuperLeadTitle; level: GlobalAccessLevel }>) {
+    setRoleDrafts((prev) => ({ ...prev, [acc.uid]: { ...getRoleDraft(acc), ...patch } }));
+  }
 
   async function loadAccounts() {
     setLoading(true);
@@ -102,14 +120,15 @@ export default function AccountsPage() {
     }
   }
 
-  async function handleGrantGlobalRole(acc: AccountListItem, title: GlobalSuperLeadTitle) {
-    const confirmMsg = `確定要授予 ${acc.email ?? acc.uid}「${title}」權限嗎?權限等同於總負責人,可以管理所有行程與帳號,只是顯示頭銜不同。`;
+  async function handleSetGlobalRole(acc: AccountListItem, title: GlobalSuperLeadTitle, level: GlobalAccessLevel) {
+    const levelLabel = level === "readOnly" ? "唯讀(只能檢視所有行程,不能新增/編輯/指派/點名)" : "完整管理";
+    const confirmMsg = `確定要將 ${acc.email ?? acc.uid} 設為「${title}」・${levelLabel}嗎?`;
     if (!confirm(confirmMsg)) return;
     setTogglingUid(acc.uid);
     try {
       await apiFetch(`/api/accounts/${acc.uid}/role`, {
         method: "PATCH",
-        body: JSON.stringify({ globalSuperLead: true, title }),
+        body: JSON.stringify({ globalSuperLead: true, title, accessLevel: level }),
       });
       await loadAccounts();
     } catch (err) {
@@ -337,6 +356,7 @@ export default function AccountsPage() {
             className="w-full max-w-xs rounded-md border border-gray-300 px-3 py-1.5 text-sm"
           />
         </div>
+        <Pagination page={page} pageCount={pageCount} onPageChange={setPage} edge="top" />
         {loading ? (
           <p className="text-sm text-gray-400">載入中…</p>
         ) : filteredAccounts.length === 0 ? (
@@ -360,36 +380,48 @@ export default function AccountsPage() {
                   {acc.globalSuperLead && (
                     <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700">
                       {acc.globalSuperLeadTitle ?? "總負責人"}
+                      {acc.globalAccessLevel === "readOnly" ? "・唯讀" : ""}
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-3">
-                  {acc.globalSuperLead ? (
+                <div className="flex items-center gap-2">
+                  <select
+                    value={getRoleDraft(acc).title}
+                    onChange={(e) => setRoleDraft(acc, { title: e.target.value as GlobalSuperLeadTitle })}
+                    className="rounded-md border border-gray-300 px-2 py-1 text-xs"
+                  >
+                    <option value="總負責人">總負責人</option>
+                    <option value="法師">法師</option>
+                  </select>
+                  <select
+                    value={getRoleDraft(acc).level}
+                    onChange={(e) => setRoleDraft(acc, { level: e.target.value as GlobalAccessLevel })}
+                    className="rounded-md border border-gray-300 px-2 py-1 text-xs"
+                  >
+                    <option value="full">完整管理</option>
+                    <option value="readOnly">唯讀</option>
+                  </select>
+                  <button
+                    onClick={() => handleSetGlobalRole(acc, getRoleDraft(acc).title, getRoleDraft(acc).level)}
+                    disabled={togglingUid === acc.uid || (getRoleDraft(acc).level === "readOnly" && acc.uid === user?.uid)}
+                    className="text-sm text-brand-600 disabled:opacity-40"
+                    title={
+                      getRoleDraft(acc).level === "readOnly" && acc.uid === user?.uid
+                        ? "無法把自己的權限降為唯讀"
+                        : undefined
+                    }
+                  >
+                    {togglingUid === acc.uid ? "處理中…" : acc.globalSuperLead ? "套用" : "授予"}
+                  </button>
+                  {acc.globalSuperLead && (
                     <button
                       onClick={() => handleRevokeGlobalRole(acc)}
                       disabled={togglingUid === acc.uid || acc.uid === user?.uid}
-                      className="text-sm text-brand-600 disabled:opacity-40"
+                      className="text-sm text-red-500 disabled:opacity-40"
                       title={acc.uid === user?.uid ? "無法收回自己的權限" : undefined}
                     >
-                      {togglingUid === acc.uid ? "處理中…" : "收回權限"}
+                      收回權限
                     </button>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => handleGrantGlobalRole(acc, "總負責人")}
-                        disabled={togglingUid === acc.uid}
-                        className="text-sm text-brand-600 disabled:opacity-40"
-                      >
-                        設為總負責人
-                      </button>
-                      <button
-                        onClick={() => handleGrantGlobalRole(acc, "法師")}
-                        disabled={togglingUid === acc.uid}
-                        className="text-sm text-brand-600 disabled:opacity-40"
-                      >
-                        設為法師
-                      </button>
-                    </>
                   )}
                   <button
                     onClick={() => {
@@ -425,7 +457,6 @@ export default function AccountsPage() {
             ))}
           </ul>
         )}
-        <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />
       </div>
     </div>
   );

@@ -4,15 +4,22 @@ export function Pagination({
   page,
   pageCount,
   onPageChange,
+  edge = "bottom",
 }: {
   page: number;
   pageCount: number;
   onPageChange: (page: number) => void;
+  /** 分隔線要靠哪一側,配合放置位置(清單上方用 top、下方用 bottom) */
+  edge?: "top" | "bottom";
 }) {
   if (pageCount <= 1) return null;
 
   return (
-    <div className="flex items-center justify-center gap-3 border-t border-gray-100 px-4 py-3 text-sm">
+    <div
+      className={`flex items-center justify-center gap-3 px-4 py-3 text-sm ${
+        edge === "top" ? "border-b border-gray-100" : "border-t border-gray-100"
+      }`}
+    >
       <button
         onClick={() => onPageChange(page - 1)}
         disabled={page <= 1}

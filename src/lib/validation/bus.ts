@@ -17,7 +17,6 @@ export const updateBusSchema = z.object({
 export const assignBusLeaderSchema = z.object({
   email: z.string().trim().email("Email 格式錯誤"),
   role: z.enum(["leader", "coLeader", "groupLeader"]),
-  password: z.string().min(6, "密碼至少 6 碼").optional(),
   /** 只負責這個組別(例如小客車車號);留空表示整台車都看得到 */
   groupTag: z.string().trim().max(50).optional(),
 });

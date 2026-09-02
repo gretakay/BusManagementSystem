@@ -134,6 +134,8 @@ export default function BusesPage() {
         />
       </div>
 
+      <Pagination page={page} pageCount={pageCount} onPageChange={setPage} edge="top" />
+
       {filteredBuses.length === 0 ? (
         <p className="text-sm text-gray-400">沒有符合條件的車輛。</p>
       ) : (
@@ -166,7 +168,6 @@ export default function BusesPage() {
           ))}
         </ul>
       )}
-      <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />
     </div>
   );
 }

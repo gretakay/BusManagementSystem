@@ -327,6 +327,7 @@ export default function PassengersPage() {
             className="w-full max-w-xs rounded-md border border-gray-300 px-3 py-1.5 text-sm"
           />
         </div>
+        <Pagination page={page} pageCount={pageCount} onPageChange={setPage} edge="top" />
         {loading ? (
           <p className="p-4 text-sm text-gray-400">載入中…</p>
         ) : filteredPassengers.length === 0 ? (
@@ -341,6 +342,7 @@ export default function PassengersPage() {
                   <th className="px-4 py-2">身分別</th>
                   <th className="px-4 py-2">義工組別</th>
                   <th className="px-4 py-2">寮房</th>
+                  <th className="px-4 py-2">緊急聯絡人</th>
                   <th className="px-4 py-2">車次</th>
                 </tr>
               </thead>
@@ -352,6 +354,7 @@ export default function PassengersPage() {
                     <td className="px-4 py-2">{IDENTITY_LABELS[p.identity]}</td>
                     <td className="px-4 py-2">{p.volunteerGroup || "-"}</td>
                     <td className="px-4 py-2">{p.lodgingInfo || "-"}</td>
+                    <td className="px-4 py-2">{p.emergencyContactName || "-"}</td>
                     <td className="px-4 py-2">{p.busId || "未分配"}</td>
                   </tr>
                 ))}
@@ -359,7 +362,6 @@ export default function PassengersPage() {
             </table>
           </div>
         )}
-        <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />
       </div>
     </div>
   );

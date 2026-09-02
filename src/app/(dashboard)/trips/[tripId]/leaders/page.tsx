@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { collection, doc, onSnapshot, orderBy, query } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
@@ -32,14 +33,12 @@ export default function TripLeadersPage() {
   const [accountOptions, setAccountOptions] = useState<EmailOption[]>([]);
   const [busId, setBusId] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [role, setRole] = useState<BusRole>("leader");
   const [groupTag, setGroupTag] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [superLeadEmail, setSuperLeadEmail] = useState("");
-  const [superLeadPassword, setSuperLeadPassword] = useState("");
   const [superLeadSubmitting, setSuperLeadSubmitting] = useState(false);
   const [superLeadError, setSuperLeadError] = useState<string | null>(null);
 
@@ -107,10 +106,9 @@ export default function TripLeadersPage() {
     try {
       await apiFetch(`/api/trips/${tripId}/superleads`, {
         method: "POST",
-        body: JSON.stringify({ email: superLeadEmail, password: superLeadPassword || undefined }),
+        body: JSON.stringify({ email: superLeadEmail }),
       });
       setSuperLeadEmail("");
-      setSuperLeadPassword("");
     } catch (err) {
       setSuperLeadError(err instanceof Error ? err.message : "指派失敗");
     } finally {
@@ -138,10 +136,9 @@ export default function TripLeadersPage() {
     try {
       await apiFetch(`/api/trips/${tripId}/buses/${busId}/leaders`, {
         method: "POST",
-        body: JSON.stringify({ email, role, password: password || undefined, groupTag: groupTag || undefined }),
+        body: JSON.stringify({ email, role, groupTag: groupTag || undefined }),
       });
       setEmail("");
-      setPassword("");
       setGroupTag("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "指派失敗");
@@ -198,7 +195,11 @@ export default function TripLeadersPage() {
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">領隊管理</h1>
       <p className="text-sm text-gray-500">
-        指派各車輛的領隊/副領隊/小組長,以及此行程的總領隊。對方如果還沒有帳號,填密碼欄位即可順便建立;已有帳號的話密碼留空即可。
+        指派各車輛的領隊/副領隊/小組長,以及此行程的總領隊。對方必須已經有帳號才能被指派,還沒有帳號的話請先到
+        <Link href="/accounts" className="text-brand-600 underline">
+          帳號管理
+        </Link>
+        建立。
       </p>
 
       {resetTarget && (
@@ -253,13 +254,6 @@ export default function TripLeadersPage() {
               options={emailSuggestions}
             />
           </div>
-          <input
-            type="text"
-            placeholder="密碼(對方還沒帳號才需填,至少6碼)"
-            value={superLeadPassword}
-            onChange={(e) => setSuperLeadPassword(e.target.value)}
-            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
-          />
           <button
             type="submit"
             disabled={superLeadSubmitting}
@@ -337,13 +331,6 @@ export default function TripLeadersPage() {
         />
         <input
           type="text"
-          placeholder="密碼(對方還沒帳號才需填,至少6碼)"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-        />
-        <input
-          type="text"
           placeholder="只負責的組別(選填,例如小客車車號;留空 = 整台車都看得到)"
           value={groupTag}
           onChange={(e) => setGroupTag(e.target.value)}
@@ -372,6 +359,7 @@ export default function TripLeadersPage() {
             className="w-full max-w-xs rounded-md border border-gray-300 px-3 py-1.5 text-sm"
           />
         </div>
+        <Pagination page={busPage} pageCount={busPageCount} onPageChange={setBusPage} edge="top" />
         {buses.length === 0 ? (
           <p className="text-sm text-gray-400">尚無車輛,請先到車輛管理新增。</p>
         ) : filteredBuses.length === 0 ? (
@@ -416,7 +404,6 @@ export default function TripLeadersPage() {
             ))}
           </ul>
         )}
-        <Pagination page={busPage} pageCount={busPageCount} onPageChange={setBusPage} />
       </div>
     </div>
   );

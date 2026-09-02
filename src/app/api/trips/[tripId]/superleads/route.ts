@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireUser, requireTripSuperLead, findOrCreateUserByEmail } from "@/lib/auth/session";
+import { requireUser, requireTripSuperLead, findUserByEmail } from "@/lib/auth/session";
 import { handleApiError } from "@/lib/api/handleError";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { writeAuditLog } from "@/lib/audit";
@@ -15,12 +15,12 @@ export async function POST(req: NextRequest, { params }: { params: { tripId: str
   try {
     const user = await requireUser(req);
     requireTripSuperLead(user, params.tripId);
-    const { email, password } = assignTripSuperLeadSchema.parse(await req.json());
+    const { email } = assignTripSuperLeadSchema.parse(await req.json());
 
-    const targetUser = await findOrCreateUserByEmail(email, password);
+    const targetUser = await findUserByEmail(email);
     if (!targetUser) {
       return NextResponse.json(
-        { error: `找不到 email 為 ${email} 的帳號,請填密碼幫對方建立新帳號,或請對方先自行註冊/登入` },
+        { error: `找不到 email 為 ${email} 的帳號,請先到「帳號管理」建立此帳號` },
         { status: 404 },
       );
     }
