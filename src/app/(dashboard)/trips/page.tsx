@@ -2,15 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { collection, orderBy, query } from "firebase/firestore";
-import { getDb } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { apiFetch } from "@/lib/api/client";
-import { onSnapshotWithRetry, useRetryToken } from "@/lib/firebase/onSnapshotWithRetry";
+import { useRetryToken } from "@/lib/firebase/onSnapshotWithRetry";
 import { InlineLoadError } from "@/components/InlineLoadError";
 import { TripStatusBadge } from "@/components/trip/TripStatusBadge";
 import { DeleteTripDialog } from "@/components/trip/DeleteTripDialog";
-import { isTripSuperLead, hasTripAssignment, tripRoleSummary } from "@/types/role";
+import { isTripSuperLead, tripRoleSummary } from "@/types/role";
 import type { Trip } from "@/types/trip";
 
 export default function TripsPage() {
@@ -27,6 +25,7 @@ export default function TripsPage() {
     setDeleting(true);
     try {
       await apiFetch(`/api/trips/${deleteTarget.id}`, { method: "DELETE" });
+      setTrips((prev) => prev.filter((t) => t.id !== deleteTarget.id));
       setDeleteTarget(null);
     } catch (err) {
       alert(err instanceof Error ? err.message : "刪除失敗");
@@ -36,27 +35,24 @@ export default function TripsPage() {
   }
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     setLoadError(false);
-    const q = query(collection(getDb(), "trips"), orderBy("date", "desc"));
-    const unsub = onSnapshotWithRetry(
-      q,
-      (snap) => {
-        setTrips(snap.docs.map((d) => d.data() as Trip));
+    apiFetch<Trip[]>("/api/trips")
+      .then((list) => {
+        if (cancelled) return;
+        setTrips(list);
         setLoading(false);
-        setLoadError(false);
-      },
-      () => {
+      })
+      .catch(() => {
+        if (cancelled) return;
         setLoading(false);
         setLoadError(true);
-      },
-    );
-    return () => unsub();
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [retryToken]);
-
-  const visibleTrips = role?.globalSuperLead
-    ? trips
-    : trips.filter((trip) => hasTripAssignment(role, trip.id));
 
   return (
     <div className="space-y-4">
@@ -76,11 +72,11 @@ export default function TripsPage() {
         <p className="text-sm text-gray-400">載入中…</p>
       ) : loadError ? (
         <InlineLoadError onRetry={retry} />
-      ) : visibleTrips.length === 0 ? (
+      ) : trips.length === 0 ? (
         <p className="text-sm text-gray-400">尚無可查看的行程。</p>
       ) : (
         <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white">
-          {visibleTrips.map((trip) => (
+          {trips.map((trip) => (
             <li key={trip.id} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50">
               <Link href={`/trips/${trip.id}`} className="flex-1">
                 <p className="font-medium">{trip.name}</p>

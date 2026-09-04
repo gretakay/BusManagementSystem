@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import clsx from "clsx";
 import * as XLSX from "xlsx";
-import { collection, doc, getCountFromServer, getDoc, orderBy, query, where } from "firebase/firestore";
+import { collection, doc, documentId, getCountFromServer, getDoc, orderBy, query, where } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
 import { apiFetch } from "@/lib/api/client";
@@ -54,18 +54,33 @@ export default function TripDashboardPage() {
   const [dataError, setDataError] = useState(false);
   const [retryToken, retry] = useRetryToken();
 
+  /**
+   * 全台車都看得到時直接照 busNumber 排序查詢;只被指派特定車輛的領隊,
+   * 用 documentId() in 指派車輛清單來查(車輛 rules 是依文件 ID 判斷,不是資料欄位),
+   * 這樣 Firestore 才能確定這個查詢一定不會回傳沒權限的車輛,不然整包查詢會被拒絕(見 buses/page.tsx 的教訓)。
+   */
   useEffect(() => {
-    const q = query(collection(getDb(), "trips", tripId, "buses"), orderBy("busNumber"));
+    if (!access.canViewAllBuses && access.assignedBusIds.length === 0) {
+      setBuses([]);
+      setDataError(false);
+      return;
+    }
+    const busesRef = collection(getDb(), "trips", tripId, "buses");
+    const q = access.canViewAllBuses
+      ? query(busesRef, orderBy("busNumber"))
+      : query(busesRef, where(documentId(), "in", access.assignedBusIds.slice(0, 30)));
     const unsub = onSnapshotWithRetry(
       q,
       (snap) => {
-        setBuses(snap.docs.map((d) => d.data() as Bus));
+        const list = snap.docs.map((d) => d.data() as Bus);
+        list.sort((a, b) => a.busNumber.localeCompare(b.busNumber));
+        setBuses(list);
         setDataError(false);
       },
       () => setDataError(true),
     );
     return () => unsub();
-  }, [tripId, retryToken]);
+  }, [tripId, access.canViewAllBuses, access.assignedBusIds, retryToken]);
 
   useEffect(() => {
     const col = collection(getDb(), "trips", tripId, "rollcalls");
