@@ -6,6 +6,7 @@ import { writeAuditLog } from "@/lib/audit";
 import { createAccountSchema } from "@/lib/validation/account";
 import {
   globalSuperLeadLabel,
+  isGroupLeaderOnlyAccount,
   type GlobalAccessLevel,
   type GlobalSuperLeadTitle,
   type UserRoleDoc,
@@ -20,6 +21,8 @@ export interface AccountListItem {
   globalAccessLevel: GlobalAccessLevel | null;
   displayName: string | null;
   loginPhone: string | null;
+  /** 這個帳號在所有行程裡是否都只當過小組長,供帳號管理頁面分頁顯示用(見 isGroupLeaderOnlyAccount)。 */
+  isGroupLeaderOnly: boolean;
 }
 
 /** 帳號管理:不綁定特定行程,獨立建立/列出登入帳號,僅全域總負責人可用。 */
@@ -52,6 +55,7 @@ export async function GET(req: NextRequest) {
         globalAccessLevel: roleDoc?.globalSuperLead ? (roleDoc.globalAccessLevel ?? "full") : null,
         displayName: roleDoc?.displayName ?? null,
         loginPhone: roleDoc?.loginPhone ?? null,
+        isGroupLeaderOnly: isGroupLeaderOnlyAccount(roleDoc),
       };
     });
 
@@ -113,6 +117,7 @@ export async function POST(req: NextRequest) {
       globalAccessLevel: null,
       displayName: displayName ?? null,
       loginPhone: loginPhone ?? null,
+      isGroupLeaderOnly: false,
     };
     return NextResponse.json(account, { status: 201 });
   } catch (error) {

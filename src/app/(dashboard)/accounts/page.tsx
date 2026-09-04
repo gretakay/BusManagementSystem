@@ -18,6 +18,7 @@ export default function AccountsPage() {
   const [deletingUid, setDeletingUid] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [tab, setTab] = useState<"general" | "groupLeader">("general");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -198,7 +199,11 @@ export default function AccountsPage() {
     }
   }
 
-  const filteredAccounts = accounts.filter((acc) => {
+  const generalAccounts = accounts.filter((acc) => !acc.isGroupLeaderOnly);
+  const groupLeaderAccounts = accounts.filter((acc) => acc.isGroupLeaderOnly);
+  const tabAccounts = tab === "groupLeader" ? groupLeaderAccounts : generalAccounts;
+
+  const filteredAccounts = tabAccounts.filter((acc) => {
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -212,7 +217,7 @@ export default function AccountsPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [search]);
+  }, [search, tab]);
 
   if (!role?.globalSuperLead) {
     return <p className="text-sm text-red-600">你沒有權限管理帳號。</p>;
@@ -349,10 +354,39 @@ export default function AccountsPage() {
       </form>
 
       <div className="space-y-3">
+        <div className="flex items-center gap-2 border-b border-gray-200">
+          <button
+            type="button"
+            onClick={() => setTab("general")}
+            className={`border-b-2 px-1 pb-2 text-sm font-medium ${
+              tab === "general"
+                ? "border-brand-600 text-brand-700"
+                : "border-transparent text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            一般帳號({generalAccounts.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("groupLeader")}
+            className={`border-b-2 px-1 pb-2 text-sm font-medium ${
+              tab === "groupLeader"
+                ? "border-brand-600 text-brand-700"
+                : "border-transparent text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            小組長帳號({groupLeaderAccounts.length})
+          </button>
+        </div>
+        {tab === "groupLeader" && (
+          <p className="text-xs text-gray-400">
+            這裡列出目前在所有行程裡都只被指派為小組長的帳號(依實際指派即時判斷,一旦被指派成領隊/副領隊/總領隊會自動移回「一般帳號」)。
+          </p>
+        )}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-medium text-gray-500">
-            所有帳號({filteredAccounts.length}
-            {filteredAccounts.length !== accounts.length ? ` / 共 ${accounts.length}` : ""})
+            {filteredAccounts.length}
+            {filteredAccounts.length !== tabAccounts.length ? ` / 共 ${tabAccounts.length}` : ""} 筆
           </h2>
           <input
             placeholder="搜尋 Email、名稱或手機號碼"
@@ -365,7 +399,7 @@ export default function AccountsPage() {
         {loading ? (
           <p className="text-sm text-gray-400">載入中…</p>
         ) : filteredAccounts.length === 0 ? (
-          <p className="text-sm text-gray-400">{accounts.length === 0 ? "尚無帳號。" : "沒有符合條件的帳號。"}</p>
+          <p className="text-sm text-gray-400">{tabAccounts.length === 0 ? "此分類尚無帳號。" : "沒有符合條件的帳號。"}</p>
         ) : (
           <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white">
             {pagedAccounts.map((acc) => (

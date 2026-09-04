@@ -74,7 +74,7 @@ export function getAssignedBusIds(role: UserRoleDoc | null | undefined, tripId: 
 }
 
 /** 相容改版前的資料:busRoles 的值原本是純字串(BusRole),改版後是 { role, groupTag? } 物件。 */
-function normalizeBusRoleAssignment(
+export function normalizeBusRoleAssignment(
   raw: BusRoleAssignment | BusRole | undefined,
 ): BusRoleAssignment | undefined {
   if (raw == null) return undefined;
@@ -110,6 +110,28 @@ export function hasTripAssignment(role: UserRoleDoc | null | undefined, tripId: 
   const trip = role.trips?.[tripId];
   if (!trip) return false;
   return Boolean(trip.superLead) || Object.keys(trip.busRoles ?? {}).length > 0;
+}
+
+/**
+ * 這個帳號在「所有」行程裡是否都只當過小組長(從來沒當過總領隊/領隊/副領隊、也不是全域總負責人)。
+ * 小組長角色是按行程/按車輛個別指派、會隨行程變動,沒有固定不變的「帳號類型」可存,
+ * 所以帳號管理頁面的分頁用這個即時算出來的結果分類,而不是在建立帳號時寫死一個標籤。
+ */
+export function isGroupLeaderOnlyAccount(role: UserRoleDoc | null | undefined): boolean {
+  if (!role || role.globalSuperLead) return false;
+  const trips = Object.values(role.trips ?? {});
+  if (trips.length === 0) return false;
+  let hasGroupLeaderRole = false;
+  for (const trip of trips) {
+    if (trip.superLead) return false;
+    for (const raw of Object.values(trip.busRoles ?? {})) {
+      const assignment = normalizeBusRoleAssignment(raw);
+      if (!assignment) continue;
+      if (assignment.role !== "groupLeader") return false;
+      hasGroupLeaderRole = true;
+    }
+  }
+  return hasGroupLeaderRole;
 }
 
 const BUS_ROLE_LABELS: Record<BusRole, string> = {
