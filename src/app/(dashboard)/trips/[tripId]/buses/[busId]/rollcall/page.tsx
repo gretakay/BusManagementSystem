@@ -236,12 +236,19 @@ export default function BusRollCallPage() {
           showQrFeedback({ type: "error", message: `查無報名序號「${regNo}」` });
         }
       } catch {
-        showQrFeedback({ type: "error", message: `查無報名序號「${regNo}」` });
+        showQrFeedback({ type: "error", message: "查詢失敗,請檢查網路連線後重試" });
       }
       return;
     }
-    await markStatus(passenger.id, "present", "qr");
-    showQrFeedback({ type: "success", message: `${passenger.name} 報到成功` });
+    try {
+      await markStatus(passenger.id, "present", "qr");
+      showQrFeedback({ type: "success", message: `${passenger.name} 報到成功` });
+    } catch (err) {
+      showQrFeedback({
+        type: "error",
+        message: err instanceof Error ? `標記失敗:${err.message}` : "標記失敗,請重試",
+      });
+    }
   }
 
   async function loadContact(passengerId: string): Promise<PassengerContactInfo> {
@@ -498,7 +505,11 @@ export default function BusRollCallPage() {
                       {(["present", "absent", "leave"] as AttendanceStatus[]).map((status) => (
                         <button
                           key={status}
-                          onClick={() => markStatus(p.id, status, "manual")}
+                          onClick={() =>
+                            markStatus(p.id, status, "manual").catch((err) => {
+                              alert(err instanceof Error ? `標記失敗:${err.message}` : "標記失敗,請重試");
+                            })
+                          }
                           disabled={!canMark}
                           className={clsx(
                             "rounded-md px-3 py-2 text-sm font-medium disabled:opacity-40",

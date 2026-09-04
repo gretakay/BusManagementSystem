@@ -3,9 +3,13 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useParams } from "next/navigation";
 import * as XLSX from "xlsx";
+import { collection, orderBy, query } from "firebase/firestore";
+import { getDb } from "@/lib/firebase/client";
 import { apiFetch } from "@/lib/api/client";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
+import { onSnapshotWithRetry } from "@/lib/firebase/onSnapshotWithRetry";
 import { Pagination } from "@/components/Pagination";
+import type { Bus } from "@/types/bus";
 import type {
   ImportPassengersResult,
   PassengerIdentity,
@@ -59,6 +63,7 @@ export default function PassengersPage() {
   const { tripId } = useParams<{ tripId: string }>();
   const access = useTripAccess(tripId);
   const [passengers, setPassengers] = useState<PassengerListItem[]>([]);
+  const [buses, setBuses] = useState<Bus[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<UpsertPassengerInput>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
@@ -83,6 +88,16 @@ export default function PassengersPage() {
   useEffect(() => {
     loadPassengers();
   }, [loadPassengers]);
+
+  useEffect(() => {
+    const q = query(collection(getDb(), "trips", tripId, "buses"), orderBy("busNumber"));
+    const unsub = onSnapshotWithRetry(q, (snap) => {
+      setBuses(snap.docs.map((d) => d.data() as Bus));
+    });
+    return () => unsub();
+  }, [tripId]);
+
+  const busNumberById = new Map(buses.map((b) => [b.id, b.busNumber]));
 
   async function handleDelete(p: PassengerListItem) {
     if (!confirm(`確定要刪除「${p.name}」(序號 ${p.regNo})嗎?此動作無法復原,已有的點名紀錄不會一併清除。`)) return;
@@ -358,7 +373,8 @@ export default function PassengersPage() {
                   <th className="px-4 py-2">義工組別</th>
                   <th className="px-4 py-2">寮房</th>
                   <th className="px-4 py-2">緊急聯絡人</th>
-                  <th className="px-4 py-2">車次</th>
+                  <th className="px-4 py-2">去程車次</th>
+                  <th className="px-4 py-2">回程車次</th>
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
@@ -371,7 +387,10 @@ export default function PassengersPage() {
                     <td className="px-4 py-2">{p.volunteerGroup || "-"}</td>
                     <td className="px-4 py-2">{p.lodgingInfo || "-"}</td>
                     <td className="px-4 py-2">{p.emergencyContactName || "-"}</td>
-                    <td className="px-4 py-2">{p.busId || "未分配"}</td>
+                    <td className="px-4 py-2">{(p.busId && busNumberById.get(p.busId)) || "未分配"}</td>
+                    <td className="px-4 py-2">
+                      {(p.returnBusId && busNumberById.get(p.returnBusId)) || "未分配"}
+                    </td>
                     <td className="px-4 py-2">
                       <button
                         onClick={() => handleDelete(p)}

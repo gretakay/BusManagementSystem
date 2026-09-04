@@ -82,6 +82,7 @@ export async function POST(req: NextRequest, { params }: { params: { tripId: str
           tripId: params.tripId,
           busId: row.busId ?? existing?.busId ?? null,
           returnBusId: row.returnBusId ?? existing?.returnBusId ?? null,
+          busGroup: row.busGroup ?? existing?.busGroup ?? "",
           name: row.name,
           dharmaName: row.dharmaName ?? "",
           phoneEnc: encryptField(row.phone),

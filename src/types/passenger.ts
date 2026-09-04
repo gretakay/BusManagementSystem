@@ -45,6 +45,9 @@ export interface PassengerContactInfo {
   emergencyContactPhone: string | null;
 }
 
+/** 供「點名報表」匯出用:總領隊限定,含解密後的完整電話,做為離線時的紙本備援。 */
+export type PassengerExportItem = PassengerListItem & PassengerContactInfo;
+
 export interface UpsertPassengerInput {
   regNo: string;
   name: string;

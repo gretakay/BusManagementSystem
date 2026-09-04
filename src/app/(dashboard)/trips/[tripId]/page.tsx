@@ -12,7 +12,7 @@ import { apiFetch } from "@/lib/api/client";
 import { onSnapshotWithRetry, useRetryToken } from "@/lib/firebase/onSnapshotWithRetry";
 import { InlineLoadError } from "@/components/InlineLoadError";
 import type { Bus } from "@/types/bus";
-import type { PassengerIdentity, PassengerListItem, TripLeg } from "@/types/passenger";
+import type { PassengerExportItem, PassengerIdentity, PassengerListItem, TripLeg } from "@/types/passenger";
 import type { AttendanceStatus, RollCall } from "@/types/rollcall";
 import type { Trip } from "@/types/trip";
 
@@ -162,11 +162,12 @@ export default function TripDashboardPage() {
     try {
       const [tripSnap, passengers] = await Promise.all([
         getDoc(doc(getDb(), "trips", tripId)),
-        apiFetch<PassengerListItem[]>(`/api/trips/${tripId}/passengers`),
+        apiFetch<PassengerExportItem[]>(`/api/trips/${tripId}/passengers/export`),
       ]);
       const tripName = tripSnap.exists() ? (tripSnap.data() as Trip).name : tripId;
       const busNumberById = new Map(buses.map((b) => [b.id, b.busNumber]));
 
+      // 這份報表是離線時的紙本備援,所以連完整電話都要有,不然斷網時撥不了未到人員的電話。
       const passengerRows = passengers.map((p) => ({
         報名序號: p.regNo,
         姓名: p.name,
@@ -177,7 +178,9 @@ export default function TripDashboardPage() {
         回程車次: (p.returnBusId && busNumberById.get(p.returnBusId)) ?? (p.returnBusId ? p.returnBusId : "未分配"),
         組別: p.busGroup ?? "",
         寮房資訊: p.lodgingInfo ?? "",
+        手機號碼: p.phone ?? "",
         緊急聯絡人姓名: p.emergencyContactName ?? "",
+        緊急聯絡人電話: p.emergencyContactPhone ?? "",
       }));
 
       // 點名紀錄用長格式(每個場次每個人一列),方便日後查核誰在哪個場次被誰標記、什麼時間標記。
