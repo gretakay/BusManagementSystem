@@ -16,6 +16,9 @@ export class UnauthorizedError extends Error {
 export class ForbiddenError extends Error {
   status = 403;
 }
+export class ConflictError extends Error {
+  status = 409;
+}
 
 /** 驗證 API route 呼叫者的 Firebase ID token,並帶出其角色文件。 */
 export async function requireUser(req: NextRequest): Promise<AuthedUser> {
@@ -48,6 +51,17 @@ export function requireTripSuperLead(user: AuthedUser, tripId: string): void {
 export function requireBusAccess(user: AuthedUser, tripId: string, busId: string): void {
   if (!canAccessBus(user.role, tripId, busId)) {
     throw new ForbiddenError("無此車輛存取權限");
+  }
+}
+
+/**
+ * 行程封存後,乘客/車輛資料應視為歷史紀錄凍結(呼應 rollcalls 規則在封存後禁止寫入的精神),
+ * 寫入類 API 一律先呼叫這個檢查,避免封存後名單被悄悄改動而事後對帳兜不起來。
+ */
+export async function requireTripNotArchived(tripId: string): Promise<void> {
+  const snap = await getAdminDb().collection("trips").doc(tripId).get();
+  if (snap.data()?.status === "archived") {
+    throw new ConflictError("行程已封存,無法修改此行程的資料");
   }
 }
 

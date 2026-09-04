@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireUser, requireBusAccess, requireTripSuperLead } from "@/lib/auth/session";
+import { requireUser, requireTripSuperLead, ForbiddenError } from "@/lib/auth/session";
 import { handleApiError } from "@/lib/api/handleError";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { decryptField } from "@/lib/crypto";
+import { canAccessBus, getBusGroupTag } from "@/types/role";
 import type { Passenger, PassengerContactInfo } from "@/types/passenger";
 
 /**
@@ -27,8 +28,21 @@ export async function GET(
     }
     const passenger = snap.data() as Passenger;
 
-    if (passenger.busId) {
-      requireBusAccess(user, params.tripId, passenger.busId);
+    // 去程/回程車次各自獨立,兩段都要檢查(否則只負責回程車的領隊查詢回程乘客電話會被誤擋);
+    // 若是靠這台車的權限通過、而該領隊在這台車只負責特定組別,還要確認這位乘客屬於同一組,
+    // 跟名單 API(passengers/route.ts)的「小組長隱私隔離」邏輯保持一致,避免電話號碼繞過組別限制外洩。
+    const accessBusId =
+      (passenger.busId && canAccessBus(user.role, params.tripId, passenger.busId) && passenger.busId) ||
+      (passenger.returnBusId &&
+        canAccessBus(user.role, params.tripId, passenger.returnBusId) &&
+        passenger.returnBusId) ||
+      null;
+
+    if (accessBusId) {
+      const groupTag = getBusGroupTag(user.role, params.tripId, accessBusId);
+      if (groupTag && passenger.busGroup !== groupTag) {
+        throw new ForbiddenError("此人員不屬於您負責的組別");
+      }
     } else {
       requireTripSuperLead(user, params.tripId);
     }

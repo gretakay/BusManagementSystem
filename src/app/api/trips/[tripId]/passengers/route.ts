@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireUser, requireBusAccess, requireTripSuperLead } from "@/lib/auth/session";
+import { requireUser, requireBusAccess, requireTripSuperLead, requireTripNotArchived } from "@/lib/auth/session";
 import { handleApiError } from "@/lib/api/handleError";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { encryptField, phoneLast4 } from "@/lib/crypto";
@@ -52,6 +52,7 @@ export async function POST(req: NextRequest, { params }: { params: { tripId: str
   try {
     const user = await requireUser(req);
     requireTripSuperLead(user, params.tripId);
+    await requireTripNotArchived(params.tripId);
 
     const input = upsertPassengerSchema.parse(await req.json());
     const db = getAdminDb();

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireUser, requireTripSuperLead } from "@/lib/auth/session";
+import { requireUser, requireTripSuperLead, requireTripNotArchived } from "@/lib/auth/session";
 import { handleApiError } from "@/lib/api/handleError";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { writeAuditLog } from "@/lib/audit";
@@ -18,6 +18,7 @@ export async function POST(req: NextRequest, { params }: { params: { tripId: str
   try {
     const user = await requireUser(req);
     requireTripSuperLead(user, params.tripId);
+    await requireTripNotArchived(params.tripId);
 
     const { passengerIds, leg, busId, busGroup } = bulkReassignSchema.parse(await req.json());
     const field = leg === "return" ? "returnBusId" : "busId";

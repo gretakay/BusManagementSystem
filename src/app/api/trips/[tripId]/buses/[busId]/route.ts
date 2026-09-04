@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireUser, requireTripSuperLead } from "@/lib/auth/session";
+import { requireUser, requireTripSuperLead, requireTripNotArchived } from "@/lib/auth/session";
 import { handleApiError } from "@/lib/api/handleError";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { updateBusSchema } from "@/lib/validation/bus";
@@ -11,6 +11,7 @@ export async function PATCH(
   try {
     const user = await requireUser(req);
     requireTripSuperLead(user, params.tripId);
+    await requireTripNotArchived(params.tripId);
 
     const input = updateBusSchema.parse(await req.json());
     const db = getAdminDb();
