@@ -8,7 +8,6 @@ import {
   collection,
   deleteDoc,
   doc,
-  onSnapshot,
   orderBy,
   query,
   updateDoc,
@@ -18,6 +17,8 @@ import { getDb } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
 import { apiFetch } from "@/lib/api/client";
+import { onSnapshotWithRetry, useRetryToken } from "@/lib/firebase/onSnapshotWithRetry";
+import { InlineLoadError } from "@/components/InlineLoadError";
 import { QrScanner } from "@/components/rollcall/QrScanner";
 import type { PassengerContactInfo, PassengerListItem, TripLeg } from "@/types/passenger";
 import type { AttendanceStatus, RollCall } from "@/types/rollcall";
@@ -61,13 +62,20 @@ export default function BusRollCallPage() {
     null,
   );
   const qrFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [listenerError, setListenerError] = useState(false);
+  const [retryToken, retry] = useRetryToken();
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(getDb(), "trips", tripId), (snap) => {
-      if (snap.exists()) setPlannedSessions(normalizePlannedSessions((snap.data() as Trip).plannedSessions));
-    });
+    const unsub = onSnapshotWithRetry(
+      doc(getDb(), "trips", tripId),
+      (snap) => {
+        if (snap.exists()) setPlannedSessions(normalizePlannedSessions((snap.data() as Trip).plannedSessions));
+        setListenerError(false);
+      },
+      () => setListenerError(true),
+    );
     return () => unsub();
-  }, [tripId]);
+  }, [tripId, retryToken]);
 
   useEffect(() => {
     const q = query(
@@ -75,12 +83,17 @@ export default function BusRollCallPage() {
       where("busId", "==", busId),
       orderBy("createdAt", "desc"),
     );
-    const unsub = onSnapshot(q, (snap) => {
-      const list = snap.docs.map((d) => ({ ...(d.data() as RollCall), id: d.id }));
-      setRollcalls(list);
-    });
+    const unsub = onSnapshotWithRetry(
+      q,
+      (snap) => {
+        const list = snap.docs.map((d) => ({ ...(d.data() as RollCall), id: d.id }));
+        setRollcalls(list);
+        setListenerError(false);
+      },
+      () => setListenerError(true),
+    );
     return () => unsub();
-  }, [tripId, busId]);
+  }, [tripId, busId, retryToken]);
 
   const rollcallsForActiveLeg = rollcalls.filter((r) => (r.leg ?? "outbound") === activeLeg);
 
@@ -297,6 +310,13 @@ export default function BusRollCallPage() {
         <p className="text-sm text-amber-600">
           ⚠ 目前顯示上次連線時儲存的名單快取,可能不是最新的;點名結果仍會正常記錄,恢復連線後建議重新整理確認名單。
         </p>
+      )}
+      {listenerError && (
+        <InlineLoadError
+          variant="banner"
+          message="無法載入場次/點名紀錄,可能不是最新資料,請重試。"
+          onRetry={retry}
+        />
       )}
 
       <div className="space-y-2 rounded-lg border border-gray-200 bg-white p-3">

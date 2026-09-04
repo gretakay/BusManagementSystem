@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import { collection, orderBy, query } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { apiFetch } from "@/lib/api/client";
+import { onSnapshotWithRetry, useRetryToken } from "@/lib/firebase/onSnapshotWithRetry";
+import { InlineLoadError } from "@/components/InlineLoadError";
 import { TripStatusBadge } from "@/components/trip/TripStatusBadge";
 import { DeleteTripDialog } from "@/components/trip/DeleteTripDialog";
 import { isTripSuperLead, hasTripAssignment, tripRoleSummary } from "@/types/role";
@@ -15,6 +17,8 @@ export default function TripsPage() {
   const { role } = useAuth();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [retryToken, retry] = useRetryToken();
   const [deleteTarget, setDeleteTarget] = useState<Trip | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -32,17 +36,23 @@ export default function TripsPage() {
   }
 
   useEffect(() => {
+    setLoading(true);
+    setLoadError(false);
     const q = query(collection(getDb(), "trips"), orderBy("date", "desc"));
-    const unsub = onSnapshot(
+    const unsub = onSnapshotWithRetry(
       q,
       (snap) => {
         setTrips(snap.docs.map((d) => d.data() as Trip));
         setLoading(false);
+        setLoadError(false);
       },
-      () => setLoading(false),
+      () => {
+        setLoading(false);
+        setLoadError(true);
+      },
     );
     return () => unsub();
-  }, []);
+  }, [retryToken]);
 
   const visibleTrips = role?.globalSuperLead
     ? trips
@@ -64,6 +74,8 @@ export default function TripsPage() {
 
       {loading ? (
         <p className="text-sm text-gray-400">載入中…</p>
+      ) : loadError ? (
+        <InlineLoadError onRetry={retry} />
       ) : visibleTrips.length === 0 ? (
         <p className="text-sm text-gray-400">尚無可查看的行程。</p>
       ) : (

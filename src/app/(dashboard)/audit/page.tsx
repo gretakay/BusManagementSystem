@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, limit, onSnapshot, orderBy, query, where } from "firebase/firestore";
+import { collection, limit, orderBy, query, where } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { onSnapshotWithRetry, useRetryToken } from "@/lib/firebase/onSnapshotWithRetry";
+import { InlineLoadError } from "@/components/InlineLoadError";
 import type { AuditAction, AuditLog } from "@/types/auditLog";
 
 const ACTION_LABELS: Record<AuditAction, string> = {
@@ -32,25 +34,32 @@ export default function AuditLogPage() {
   const { role } = useAuth();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [retryToken, retry] = useRetryToken();
   const [tripIdFilter, setTripIdFilter] = useState("");
 
   useEffect(() => {
     if (!role?.globalSuperLead) return;
     setLoading(true);
+    setLoadError(false);
     const base = collection(getDb(), "auditLogs");
     const q = tripIdFilter.trim()
       ? query(base, where("tripId", "==", tripIdFilter.trim()), orderBy("timestamp", "desc"), limit(PAGE_SIZE))
       : query(base, orderBy("timestamp", "desc"), limit(PAGE_SIZE));
-    const unsub = onSnapshot(
+    const unsub = onSnapshotWithRetry(
       q,
       (snap) => {
         setLogs(snap.docs.map((d) => ({ ...(d.data() as AuditLog), id: d.id })));
         setLoading(false);
+        setLoadError(false);
       },
-      () => setLoading(false),
+      () => {
+        setLoading(false);
+        setLoadError(true);
+      },
     );
     return () => unsub();
-  }, [role?.globalSuperLead, tripIdFilter]);
+  }, [role?.globalSuperLead, tripIdFilter, retryToken]);
 
   if (!role?.globalSuperLead) {
     return <p className="text-sm text-red-600">你沒有權限查看操作紀錄。</p>;
@@ -72,6 +81,8 @@ export default function AuditLogPage() {
 
       {loading ? (
         <p className="text-sm text-gray-400">載入中…</p>
+      ) : loadError ? (
+        <InlineLoadError onRetry={retry} />
       ) : logs.length === 0 ? (
         <p className="text-sm text-gray-400">尚無紀錄。</p>
       ) : (

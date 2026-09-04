@@ -2,10 +2,12 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { apiFetch } from "@/lib/api/client";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
+import { onSnapshotWithRetry, useRetryToken } from "@/lib/firebase/onSnapshotWithRetry";
+import { InlineLoadError } from "@/components/InlineLoadError";
 import { normalizePlannedSessions, type PlannedSessions, type Trip } from "@/types/trip";
 import type { TripLeg } from "@/types/passenger";
 
@@ -30,19 +32,27 @@ export default function EditTripPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [tripError, setTripError] = useState(false);
+  const [retryToken, retry] = useRetryToken();
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(getDb(), "trips", tripId), (snap) => {
-      if (!snap.exists()) return;
-      const data = snap.data() as Trip;
-      setTrip(data);
-      setName(data.name);
-      setDate(data.date);
-      setBusCount(data.busCount);
-      setPlannedSessions(normalizePlannedSessions(data.plannedSessions));
-    });
+    setTripError(false);
+    const unsub = onSnapshotWithRetry(
+      doc(getDb(), "trips", tripId),
+      (snap) => {
+        if (!snap.exists()) return;
+        const data = snap.data() as Trip;
+        setTrip(data);
+        setName(data.name);
+        setDate(data.date);
+        setBusCount(data.busCount);
+        setPlannedSessions(normalizePlannedSessions(data.plannedSessions));
+        setTripError(false);
+      },
+      () => setTripError(true),
+    );
     return () => unsub();
-  }, [tripId]);
+  }, [tripId, retryToken]);
 
   function handleAddSession(leg: TripLeg) {
     const value = newSessionNames[leg].trim();
@@ -72,6 +82,7 @@ export default function EditTripPage() {
     }
   }
 
+  if (tripError) return <InlineLoadError onRetry={retry} />;
   if (!trip) return <p className="text-sm text-gray-400">載入中…</p>;
 
   if (!access.isSuperLead) {

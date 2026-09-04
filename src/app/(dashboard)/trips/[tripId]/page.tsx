@@ -5,10 +5,12 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import clsx from "clsx";
 import * as XLSX from "xlsx";
-import { collection, doc, getCountFromServer, getDoc, onSnapshot, orderBy, query, where } from "firebase/firestore";
+import { collection, doc, getCountFromServer, getDoc, orderBy, query, where } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
 import { apiFetch } from "@/lib/api/client";
+import { onSnapshotWithRetry, useRetryToken } from "@/lib/firebase/onSnapshotWithRetry";
+import { InlineLoadError } from "@/components/InlineLoadError";
 import type { Bus } from "@/types/bus";
 import type { PassengerIdentity, PassengerListItem, TripLeg } from "@/types/passenger";
 import type { AttendanceStatus, RollCall } from "@/types/rollcall";
@@ -49,12 +51,21 @@ export default function TripDashboardPage() {
   const [activeLeg, setActiveLeg] = useState<TripLeg>("outbound");
   const busIdField = activeLeg === "return" ? "returnBusId" : "busId";
   const [exporting, setExporting] = useState(false);
+  const [dataError, setDataError] = useState(false);
+  const [retryToken, retry] = useRetryToken();
 
   useEffect(() => {
     const q = query(collection(getDb(), "trips", tripId, "buses"), orderBy("busNumber"));
-    const unsub = onSnapshot(q, (snap) => setBuses(snap.docs.map((d) => d.data() as Bus)));
+    const unsub = onSnapshotWithRetry(
+      q,
+      (snap) => {
+        setBuses(snap.docs.map((d) => d.data() as Bus));
+        setDataError(false);
+      },
+      () => setDataError(true),
+    );
     return () => unsub();
-  }, [tripId]);
+  }, [tripId, retryToken]);
 
   useEffect(() => {
     const col = collection(getDb(), "trips", tripId, "rollcalls");
@@ -62,9 +73,16 @@ export default function TripDashboardPage() {
       access.canViewAllBuses || access.assignedBusIds.length === 0
         ? query(col)
         : query(col, where("busId", "in", access.assignedBusIds.slice(0, 30)));
-    const unsub = onSnapshot(q, (snap) => setRollcalls(snap.docs.map((d) => d.data() as RollCall)));
+    const unsub = onSnapshotWithRetry(
+      q,
+      (snap) => {
+        setRollcalls(snap.docs.map((d) => d.data() as RollCall));
+        setDataError(false);
+      },
+      () => setDataError(true),
+    );
     return () => unsub();
-  }, [tripId, access.canViewAllBuses, access.assignedBusIds]);
+  }, [tripId, access.canViewAllBuses, access.assignedBusIds, retryToken]);
 
   async function refreshAssignedCounts() {
     const entries = await Promise.all(
@@ -204,6 +222,7 @@ export default function TripDashboardPage() {
           </button>
         )}
       </div>
+      {dataError && <InlineLoadError variant="banner" onRetry={retry} />}
       <h2 className="text-sm font-medium text-gray-500">
         各車即時完成度({LEG_LABELS[activeLeg]}・最新場次)
       </h2>

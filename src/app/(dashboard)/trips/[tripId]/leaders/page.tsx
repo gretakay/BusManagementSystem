@@ -3,11 +3,13 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { collection, doc, onSnapshot, orderBy, query } from "firebase/firestore";
+import { collection, doc, orderBy, query } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { apiFetch } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
+import { onSnapshotWithRetry, useRetryToken } from "@/lib/firebase/onSnapshotWithRetry";
+import { InlineLoadError } from "@/components/InlineLoadError";
 import { EmailAutocomplete, type EmailOption } from "@/components/trip/EmailAutocomplete";
 import { Pagination } from "@/components/Pagination";
 import type { Bus } from "@/types/bus";
@@ -49,6 +51,8 @@ export default function TripLeadersPage() {
 
   const [busSearch, setBusSearch] = useState("");
   const [busPage, setBusPage] = useState(1);
+  const [dataError, setDataError] = useState(false);
+  const [retryToken, retry] = useRetryToken();
 
   useEffect(() => {
     if (!authRole?.globalSuperLead) return;
@@ -84,20 +88,30 @@ export default function TripLeadersPage() {
 
   useEffect(() => {
     const q = query(collection(getDb(), "trips", tripId, "buses"), orderBy("busNumber"));
-    const unsub = onSnapshot(q, (snap) => {
-      const list = snap.docs.map((d) => d.data() as Bus);
-      setBuses(list);
-      setBusId((prev) => (prev && list.some((b) => b.id === prev) ? prev : (list[0]?.id ?? "")));
-    });
+    const unsub = onSnapshotWithRetry(
+      q,
+      (snap) => {
+        const list = snap.docs.map((d) => d.data() as Bus);
+        setBuses(list);
+        setBusId((prev) => (prev && list.some((b) => b.id === prev) ? prev : (list[0]?.id ?? "")));
+        setDataError(false);
+      },
+      () => setDataError(true),
+    );
     return () => unsub();
-  }, [tripId]);
+  }, [tripId, retryToken]);
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(getDb(), "trips", tripId), (snap) => {
-      if (snap.exists()) setTrip(snap.data() as Trip);
-    });
+    const unsub = onSnapshotWithRetry(
+      doc(getDb(), "trips", tripId),
+      (snap) => {
+        if (snap.exists()) setTrip(snap.data() as Trip);
+        setDataError(false);
+      },
+      () => setDataError(true),
+    );
     return () => unsub();
-  }, [tripId]);
+  }, [tripId, retryToken]);
 
   async function handleAssignSuperLead(e: FormEvent) {
     e.preventDefault();
@@ -201,6 +215,8 @@ export default function TripLeadersPage() {
         </Link>
         建立。
       </p>
+
+      {dataError && <InlineLoadError variant="banner" onRetry={retry} />}
 
       {resetTarget && (
         <form

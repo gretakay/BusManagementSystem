@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import clsx from "clsx";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import { collection, orderBy, query } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { apiFetch } from "@/lib/api/client";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
+import { onSnapshotWithRetry, useRetryToken } from "@/lib/firebase/onSnapshotWithRetry";
+import { InlineLoadError } from "@/components/InlineLoadError";
 import { Pagination } from "@/components/Pagination";
 import type { Bus } from "@/types/bus";
 import type { PassengerIdentity, PassengerListItem, TripLeg } from "@/types/passenger";
@@ -49,14 +51,23 @@ export default function SeatingPage() {
   const [bulkApplying, setBulkApplying] = useState(false);
   const [groupDrafts, setGroupDrafts] = useState<Record<string, string>>({});
   const [page, setPage] = useState(1);
+  const [busesError, setBusesError] = useState(false);
+  const [retryToken, retry] = useRetryToken();
 
   const busIdField = leg === "return" ? "returnBusId" : "busId";
 
   useEffect(() => {
     const q = query(collection(getDb(), "trips", tripId, "buses"), orderBy("busNumber"));
-    const unsub = onSnapshot(q, (snap) => setBuses(snap.docs.map((d) => d.data() as Bus)));
+    const unsub = onSnapshotWithRetry(
+      q,
+      (snap) => {
+        setBuses(snap.docs.map((d) => d.data() as Bus));
+        setBusesError(false);
+      },
+      () => setBusesError(true),
+    );
     return () => unsub();
-  }, [tripId]);
+  }, [tripId, retryToken]);
 
   async function loadPassengers() {
     setLoading(true);
@@ -235,6 +246,8 @@ export default function SeatingPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">排車</h1>
+
+      {busesError && <InlineLoadError variant="banner" onRetry={retry} />}
 
       <div className="flex items-center gap-2">
         {(["outbound", "return"] as TripLeg[]).map((l) => (

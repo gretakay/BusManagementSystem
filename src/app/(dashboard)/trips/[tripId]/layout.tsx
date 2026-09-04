@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useParams, useRouter } from "next/navigation";
 import clsx from "clsx";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
 import { apiFetch } from "@/lib/api/client";
+import { onSnapshotWithRetry, useRetryToken } from "@/lib/firebase/onSnapshotWithRetry";
+import { InlineLoadError } from "@/components/InlineLoadError";
 import { TripStatusBadge } from "@/components/trip/TripStatusBadge";
 import { DeleteTripDialog } from "@/components/trip/DeleteTripDialog";
 import { BroadcastPanel } from "@/components/trip/BroadcastPanel";
@@ -36,16 +38,24 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
   const access = useTripAccess(tripId);
 
   const [trip, setTrip] = useState<Trip | null>(null);
+  const [tripError, setTripError] = useState(false);
+  const [retryToken, retry] = useRetryToken();
   const [unarchiving, setUnarchiving] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(getDb(), "trips", tripId), (snap) => {
-      if (snap.exists()) setTrip(snap.data() as Trip);
-    });
+    setTripError(false);
+    const unsub = onSnapshotWithRetry(
+      doc(getDb(), "trips", tripId),
+      (snap) => {
+        if (snap.exists()) setTrip(snap.data() as Trip);
+        setTripError(false);
+      },
+      () => setTripError(true),
+    );
     return () => unsub();
-  }, [tripId]);
+  }, [tripId, retryToken]);
 
   async function handleUnarchive() {
     setUnarchiving(true);
@@ -69,6 +79,7 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
     }
   }
 
+  if (tripError) return <InlineLoadError onRetry={retry} />;
   if (!trip) return <p className="text-sm text-gray-400">載入中…</p>;
 
   const basePath = `/trips/${tripId}`;

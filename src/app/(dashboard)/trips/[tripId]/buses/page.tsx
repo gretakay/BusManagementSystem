@@ -3,10 +3,12 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import { collection, orderBy, query } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { apiFetch } from "@/lib/api/client";
 import { useTripAccess } from "@/lib/auth/useTripAccess";
+import { onSnapshotWithRetry, useRetryToken } from "@/lib/firebase/onSnapshotWithRetry";
+import { InlineLoadError } from "@/components/InlineLoadError";
 import { Pagination } from "@/components/Pagination";
 import type { Bus } from "@/types/bus";
 import type { BusRole } from "@/types/role";
@@ -32,12 +34,21 @@ export default function BusesPage() {
   });
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [busesError, setBusesError] = useState(false);
+  const [retryToken, retry] = useRetryToken();
 
   useEffect(() => {
     const q = query(collection(getDb(), "trips", tripId, "buses"), orderBy("busNumber"));
-    const unsub = onSnapshot(q, (snap) => setBuses(snap.docs.map((d) => d.data() as Bus)));
+    const unsub = onSnapshotWithRetry(
+      q,
+      (snap) => {
+        setBuses(snap.docs.map((d) => d.data() as Bus));
+        setBusesError(false);
+      },
+      () => setBusesError(true),
+    );
     return () => unsub();
-  }, [tripId]);
+  }, [tripId, retryToken]);
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
@@ -77,6 +88,8 @@ export default function BusesPage() {
           前往領隊管理 →
         </Link>
       </div>
+
+      {busesError && <InlineLoadError variant="banner" onRetry={retry} />}
 
       <form onSubmit={handleCreate} className="grid max-w-lg gap-3 rounded-lg border border-gray-200 bg-white p-4">
         <h2 className="text-sm font-medium text-gray-500">新增車輛</h2>
