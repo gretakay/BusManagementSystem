@@ -100,15 +100,20 @@ export default function TripDashboardPage() {
   }, [tripId, access.canViewAllBuses, access.assignedBusIds, retryToken]);
 
   async function refreshAssignedCounts() {
-    const entries = await Promise.all(
-      buses.map(async (bus) => {
-        const snap = await getCountFromServer(
-          query(collection(getDb(), "trips", tripId, "passengers"), where(busIdField, "==", bus.id)),
-        );
-        return [bus.id, snap.data().count] as const;
-      }),
-    );
-    setAssignedCounts(Object.fromEntries(entries));
+    try {
+      const entries = await Promise.all(
+        buses.map(async (bus) => {
+          const snap = await getCountFromServer(
+            query(collection(getDb(), "trips", tripId, "passengers"), where(busIdField, "==", bus.id)),
+          );
+          return [bus.id, snap.data().count] as const;
+        }),
+      );
+      setAssignedCounts(Object.fromEntries(entries));
+    } catch (err) {
+      console.error("refreshAssignedCounts failed", err);
+      setDataError(true);
+    }
   }
 
   useEffect(() => {

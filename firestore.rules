@@ -77,8 +77,11 @@ service cloud.firestore {
       }
 
       match /passengers/{passengerId} {
+        // 去程/回程車次是各自獨立的欄位(busId / returnBusId),兩段都要檢查,
+        // 不然只被指派回程車輛的領隊在「回程」分頁查詢人數時,規則證不出安全性,整包查詢會被拒絕。
         allow read: if canViewTrip(tripId)
-          || (resource.data.busId != null && canViewBus(tripId, resource.data.busId));
+          || (resource.data.busId != null && canViewBus(tripId, resource.data.busId))
+          || (resource.data.returnBusId != null && canViewBus(tripId, resource.data.returnBusId));
         allow write: if false;
       }
 
